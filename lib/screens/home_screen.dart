@@ -251,20 +251,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            PageRouteBuilder(
-                              transitionDuration: const Duration(
-                                milliseconds: 600,
-                              ),
-                              pageBuilder: (_, __, ___) => DetailScreen(
+                            MaterialPageRoute(
+                              builder: (context) => DetailScreen(
                                 sermon: sermon,
                                 heroTag: heroTag,
+                                searchQuery: _searchController.text.isNotEmpty
+                                    ? _searchController.text
+                                    : null,
                               ),
-                              transitionsBuilder: (_, animation, __, child) {
-                                return FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                );
-                              },
                             ),
                           );
                         },
@@ -426,13 +420,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
       Navigator.push(
         context,
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 600),
-          pageBuilder: (_, __, ___) =>
-              DetailScreen(sermon: sermon, heroTag: heroTag),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
+        MaterialPageRoute(
+          builder: (context) => DetailScreen(
+            sermon: sermon,
+            heroTag: heroTag,
+            searchQuery: _searchController.text.isNotEmpty
+                ? _searchController.text
+                : null,
+          ),
         ),
       );
     }

@@ -1,26 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const String _fontSizeKey = 'fontSize';
   static const String _themeModeKey = 'themeMode';
+  static const String _fontFamilyKey = 'fontFamily';
 
   double _fontSize = 20.0;
   ThemeMode _themeMode = ThemeMode.light;
+  String _fontFamily = 'Amiri';
 
   double get fontSize => _fontSize;
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
+  String get fontFamily => _fontFamily;
 
   SettingsProvider() {
     _loadSettings();
   }
+
+  final Map<
+    String,
+    TextStyle Function({
+      TextStyle? textStyle,
+      Color? color,
+      Color? backgroundColor,
+      double? fontSize,
+      FontWeight? fontWeight,
+      FontStyle? fontStyle,
+      double? letterSpacing,
+      double? wordSpacing,
+      TextBaseline? textBaseline,
+      double? height,
+      Locale? locale,
+      Paint? foreground,
+      Paint? background,
+      List<Shadow>? shadows,
+      List<FontFeature>? fontFeatures,
+      TextDecoration? decoration,
+      Color? decorationColor,
+      TextDecorationStyle? decorationStyle,
+      double? decorationThickness,
+    })
+  >
+  fonts = {
+    'Amiri': GoogleFonts.amiri,
+    'Tajawal': GoogleFonts.tajawal,
+    'Cairo': GoogleFonts.cairo,
+  };
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _fontSize = prefs.getDouble(_fontSizeKey) ?? 20.0;
     final themeModeIndex = prefs.getInt(_themeModeKey) ?? ThemeMode.light.index;
     _themeMode = ThemeMode.values[themeModeIndex];
+    _fontFamily = prefs.getString(_fontFamilyKey) ?? 'Amiri';
     notifyListeners();
   }
 
@@ -29,6 +64,15 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_fontSizeKey, size);
+  }
+
+  Future<void> setFontFamily(String family) async {
+    if (fonts.containsKey(family)) {
+      _fontFamily = family;
+      notifyListeners();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_fontFamilyKey, family);
+    }
   }
 
   Future<void> toggleThemeMode() async {
