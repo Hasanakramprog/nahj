@@ -10,7 +10,9 @@ class DataService {
     if (_allItems.isNotEmpty) return _allItems;
 
     try {
-      final String response = await rootBundle.loadString('assets/output.json');
+      final String response = await rootBundle.loadString(
+        'assets/scraped_output_cleaned.json',
+      );
       final Map<String, dynamic> data = json.decode(response);
 
       _allItems = data.entries.map((entry) {

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../providers/bookmarks_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/data_service.dart';
 import 'detail_screen.dart';
 
@@ -81,7 +82,16 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                   itemCount: savedSermons.length,
                   itemBuilder: (context, index) {
                     final sermon = savedSermons[index];
+                    final originalIndex = _allSermons.indexOf(sermon) + 1;
                     final heroTag = 'bookmark_sermon_${sermon.title.hashCode}';
+
+                    // Get dark mode status
+                    final isDark = context.watch<SettingsProvider>().isDarkMode;
+                    final titleColor = isDark ? Colors.amber : Colors.black;
+                    final numberColor = isDark
+                        ? Colors.amber
+                        : Theme.of(context).primaryColor;
+                    final textColor = isDark ? Colors.white : Colors.grey[700];
 
                     return Hero(
                       tag: heroTag,
@@ -90,40 +100,98 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withOpacity(0.1),
+                            width: 1,
+                          ),
                         ),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => DetailScreen(
+                              PageRouteBuilder(
+                                transitionDuration: const Duration(
+                                  milliseconds: 600,
+                                ),
+                                pageBuilder: (_, __, ___) => DetailScreen(
                                   sermon: sermon,
                                   heroTag: heroTag,
                                 ),
+                                transitionsBuilder: (_, animation, __, child) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  );
+                                },
                               ),
                             );
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.bookmark, color: Colors.amber),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    sermon.title,
-                                    style: GoogleFonts.tajawal(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.amber.withOpacity(0.2)
+                                            : Theme.of(
+                                                context,
+                                              ).primaryColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        "$originalIndex",
+                                        style: GoogleFonts.tajawal(
+                                          color: numberColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        sermon.title,
+                                        style: GoogleFonts.tajawal(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.3,
+                                          color: titleColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.bookmark,
+                                      color: Colors.amber,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                if (sermon.text.isNotEmpty)
+                                  Text(
+                                    sermon.text.contains('\n\n')
+                                        ? sermon.text.substring(
+                                            0,
+                                            sermon.text.indexOf('\n\n'),
+                                          )
+                                        : sermon.text,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.amiri(
+                                      fontSize: 16,
+                                      color: textColor,
+                                      height: 1.8,
                                     ),
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
                               ],
                             ),
                           ),

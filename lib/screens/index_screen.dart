@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../services/data_service.dart';
+import '../providers/settings_provider.dart';
 import 'detail_screen.dart';
 
 class IndexScreen extends StatefulWidget {
@@ -58,6 +60,19 @@ class _IndexScreenState extends State<IndexScreen> {
                 // Unique hero tag for grid transition
                 final heroTag = 'index_grid_${sermon.title.hashCode}';
 
+                // Get dark mode status
+                final isDark = context.watch<SettingsProvider>().isDarkMode;
+                final cardColor = isDark
+                    ? const Color(0xFF2d2d2d)
+                    : Colors.white;
+                final numberBoxColor = isDark
+                    ? Colors.amber.withOpacity(0.2)
+                    : Theme.of(context).primaryColor.withOpacity(0.1);
+                final numberColor = isDark
+                    ? Colors.amber
+                    : Theme.of(context).primaryColor;
+                final titleColor = isDark ? Colors.white : Colors.black87;
+
                 return Hero(
                   tag: heroTag,
                   child: Card(
@@ -65,15 +80,24 @@ class _IndexScreenState extends State<IndexScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    color: Colors.white,
+                    color: cardColor,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) =>
+                          PageRouteBuilder(
+                            transitionDuration: const Duration(
+                              milliseconds: 600,
+                            ),
+                            pageBuilder: (_, __, ___) =>
                                 DetailScreen(sermon: sermon, heroTag: heroTag),
+                            transitionsBuilder: (_, animation, __, child) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              );
+                            },
                           ),
                         );
                       },
@@ -84,16 +108,14 @@ class _IndexScreenState extends State<IndexScreen> {
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withOpacity(0.1),
+                              color: numberBoxColor,
                             ),
                             child: Text(
                               "${index + 1}",
                               style: GoogleFonts.tajawal(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
+                                color: numberColor,
                               ),
                             ),
                           ),
@@ -111,6 +133,7 @@ class _IndexScreenState extends State<IndexScreen> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 height: 1.2,
+                                color: titleColor,
                               ),
                             ),
                           ),

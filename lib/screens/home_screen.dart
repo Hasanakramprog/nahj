@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../services/data_service.dart';
 import '../providers/bookmarks_provider.dart';
+import '../providers/settings_provider.dart';
 import 'bookmarks_screen.dart';
 import 'detail_screen.dart';
 import 'index_screen.dart';
@@ -101,26 +102,45 @@ class _HomeScreenState extends State<HomeScreen> {
           style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        actions: [
-          Tooltip(
-            key: _indexTooltipKey,
-            message: 'فهرس الخطب',
-            child: AnimatedScale(
-              scale: _isIndexPressed ? 0.8 : 1.0,
-              duration: const Duration(milliseconds: 150),
-              child: IconButton(
-                icon: const Icon(Icons.grid_view),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const IndexScreen(),
-                    ),
-                  );
-                },
+        leadingWidth: 96,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Consumer<SettingsProvider>(
+              builder: (context, settings, child) {
+                return IconButton(
+                  icon: Icon(
+                    settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  ),
+                  tooltip: settings.isDarkMode
+                      ? 'الوضع الفاتح'
+                      : 'الوضع الداكن',
+                  onPressed: () => settings.toggleThemeMode(),
+                );
+              },
+            ),
+            Tooltip(
+              key: _indexTooltipKey,
+              message: 'فهرس الخطب',
+              child: AnimatedScale(
+                scale: _isIndexPressed ? 0.8 : 1.0,
+                duration: const Duration(milliseconds: 150),
+                child: IconButton(
+                  icon: const Icon(Icons.grid_view),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const IndexScreen(),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
+          ],
+        ),
+        actions: [
           Tooltip(
             key: _bookmarksTooltipKey,
             message: 'الخطب المحفوظة',
@@ -204,6 +224,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Clean title for Hero tag
                   final heroTag = 'sermon_${sermon.title.hashCode}';
 
+                  // Get dark mode status
+                  final isDark = context.watch<SettingsProvider>().isDarkMode;
+                  final titleColor = isDark ? Colors.amber : Colors.black;
+                  final numberColor = isDark
+                      ? Colors.amber
+                      : Theme.of(context).primaryColor;
+                  final textColor = isDark ? Colors.white : Colors.grey[700];
+
                   return Hero(
                     tag: heroTag,
                     child: Card(
@@ -251,16 +279,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).primaryColor.withOpacity(0.1),
+                                      color: isDark
+                                          ? Colors.amber.withOpacity(0.2)
+                                          : Theme.of(
+                                              context,
+                                            ).primaryColor.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     alignment: Alignment.center,
                                     child: Text(
                                       "${index + 1}",
                                       style: GoogleFonts.tajawal(
-                                        color: Theme.of(context).primaryColor,
+                                        color: numberColor,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -274,6 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         height: 1.3,
+                                        color: titleColor,
                                       ),
                                     ),
                                   ),
@@ -295,12 +326,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 12),
                               if (sermon.text.isNotEmpty)
                                 Text(
-                                  sermon.text.split('\n\n').first,
+                                  sermon.text.contains('\n\n')
+                                      ? sermon.text.substring(
+                                          0,
+                                          sermon.text.indexOf('\n\n'),
+                                        )
+                                      : sermon.text,
                                   maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.amiri(
                                     fontSize: 16,
-                                    color: Colors.grey[700],
+                                    color: textColor,
                                     height: 1.8,
                                   ),
                                 ),
