@@ -88,9 +88,20 @@ def clean_json_file(input_file, output_file):
     print("Done!")
 
 if __name__ == "__main__":
-    # Input and output files
-    input_file = 'assets/scraped_output.json'
-    output_file = 'assets/scraped_output_cleaned.json'
+    import sys
+    
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        input_file = sys.argv[1]
+        # Use provided output file or generate one
+        if len(sys.argv) > 2:
+            output_file = sys.argv[2]
+        else:
+            output_file = input_file.replace('.json', '_cleaned.json')
+    else:
+        # Default behavior (hardcoded)
+        input_file = 'assets/scraped_output.json'
+        output_file = 'assets/scraped_output_cleaned.json'
     
     # Clean the JSON file
     clean_json_file(input_file, output_file)

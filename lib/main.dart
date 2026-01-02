@@ -1,13 +1,45 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'providers/bookmarks_provider.dart';
 import 'providers/settings_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_menu_screen.dart';
 
 void main() {
-  runApp(const NahjApp());
+  // Catch any errors during app initialization
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Set up error widget builder for better debugging
+      ErrorWidget.builder = (FlutterErrorDetails details) {
+        return Material(
+          child: Container(
+            color: Colors.red,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'خطأ في التطبيق\nError: ${details.exception}',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        );
+      };
+
+      runApp(const NahjApp());
+    },
+    (error, stack) {
+      print('Caught error: $error');
+      print('Stack trace: $stack');
+    },
+  );
 }
 
 class NahjApp extends StatelessWidget {
@@ -46,7 +78,7 @@ class NahjApp extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              textTheme: GoogleFonts.tajawalTextTheme(),
+              textTheme: ThemeData.light().textTheme,
             ),
             darkTheme: ThemeData(
               useMaterial3: true,
@@ -62,9 +94,7 @@ class NahjApp extends StatelessWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
               ),
-              textTheme: GoogleFonts.tajawalTextTheme(
-                ThemeData.dark().textTheme,
-              ),
+              textTheme: ThemeData.dark().textTheme,
             ),
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
@@ -75,7 +105,25 @@ class NahjApp extends StatelessWidget {
               Locale('ar', ''), // Arabic
             ],
             locale: const Locale('ar', ''),
-            home: const HomeScreen(),
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  textTheme: (switch (settings.fontFamily) {
+                    'Amiri' => GoogleFonts.amiriTextTheme(
+                      Theme.of(context).textTheme,
+                    ),
+                    'Cairo' => GoogleFonts.cairoTextTheme(
+                      Theme.of(context).textTheme,
+                    ),
+                    _ => GoogleFonts.tajawalTextTheme(
+                      Theme.of(context).textTheme,
+                    ),
+                  }).apply(fontFamilyFallback: ['Arial', 'Helvetica']),
+                ),
+                child: child!,
+              );
+            },
+            home: const MainMenuScreen(),
           );
         },
       ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../services/data_service.dart';
@@ -9,14 +9,21 @@ import 'bookmarks_screen.dart';
 import 'detail_screen.dart';
 import 'index_screen.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class ContentListScreen extends StatefulWidget {
+  final String title;
+  final String jsonPath;
+
+  const ContentListScreen({
+    super.key,
+    required this.title,
+    required this.jsonPath,
+  });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<ContentListScreen> createState() => _ContentListScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _ContentListScreenState extends State<ContentListScreen> {
   final DataService _dataService = DataService();
   List<SermonModel> _allSermons = [];
   List<SermonModel> _filteredSermons = [];
@@ -44,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _runTooltipAnimation();
     });
   }
+
+  // ... (tooltip animation kept same, omitted for brevity in replacement if possible, but I must replace contiguous block)
 
   Future<void> _runTooltipAnimation() async {
     await Future.delayed(const Duration(seconds: 1));
@@ -76,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final sermons = await _dataService.loadData();
+    final sermons = await _dataService.loadData(jsonPath: widget.jsonPath);
     if (mounted) {
       setState(() {
         _allSermons = sermons;
@@ -95,29 +104,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch settings at the top level of build
+    final settings = context.watch<SettingsProvider>();
+    final isDark = settings.isDarkMode;
+    final useHistoric = settings.useHistoricBackground;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "نهج البلاغة",
-          style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+          widget.title,
+          style: settings.fonts[settings.fontFamily]!(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
         ),
         centerTitle: true,
         leadingWidth: 96,
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Consumer<SettingsProvider>(
-              builder: (context, settings, child) {
-                return IconButton(
-                  icon: Icon(
-                    settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                  ),
-                  tooltip: settings.isDarkMode
-                      ? 'الوضع الفاتح'
-                      : 'الوضع الداكن',
-                  onPressed: () => settings.toggleThemeMode(),
-                );
-              },
+            IconButton(
+              icon: Icon(
+                settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              ),
+              tooltip: settings.isDarkMode ? 'الوضع الفاتح' : 'الوضع الداكن',
+              onPressed: () => settings.toggleThemeMode(),
             ),
             Tooltip(
               key: _indexTooltipKey,
@@ -131,7 +142,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const IndexScreen(),
+                        builder: (context) => IndexScreen(
+                          title: 'فهرس ${widget.title}',
+                          jsonPath: widget.jsonPath,
+                        ),
                       ),
                     );
                   },
@@ -181,7 +195,9 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'بحث...',
-                hintStyle: GoogleFonts.tajawal(color: Colors.white70),
+                hintStyle: settings.fonts[settings.fontFamily]!(
+                  color: Colors.white70,
+                ),
                 prefixIcon: const Icon(Icons.search, color: Colors.white70),
                 filled: true,
                 fillColor: Colors.white.withOpacity(0.2),
@@ -191,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
-              style: GoogleFonts.tajawal(color: Colors.white),
+              style: settings.fonts[settings.fontFamily]!(color: Colors.white),
               cursorColor: Colors.white,
             ),
           ),
@@ -202,8 +218,11 @@ class _HomeScreenState extends State<HomeScreen> {
           : _filteredSermons.isEmpty
           ? Center(
               child: Text(
-                "لا توجد نتائج",
-                style: GoogleFonts.tajawal(fontSize: 18, color: Colors.grey),
+                "لا توجد نتائج (0)",
+                style: settings.fonts[settings.fontFamily]!(
+                  fontSize: 18,
+                  color: Colors.grey,
+                ),
               ),
             )
           : RawScrollbar(
@@ -223,10 +242,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   final sermon = _filteredSermons[index];
                   final heroTag = 'sermon_${sermon.title.hashCode}';
 
-                  final settings = context.watch<SettingsProvider>();
-                  final isDark = settings.isDarkMode;
-                  final useHistoric = settings.useHistoricBackground;
+                  // Using the settings from top of build
+                  // final settings = context.watch<SettingsProvider>();
+                  // Already defined above
 
+                  // Colors logic matches original but uses 'isDark' from top scope
                   final titleColor = isDark
                       ? Colors.amber
                       : const Color(0xFF5D4037);
@@ -307,23 +327,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                       alignment: Alignment.center,
                                       child: Text(
                                         "${index + 1}",
-                                        style: GoogleFonts.tajawal(
-                                          color: numberColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
+                                        style:
+                                            settings.fonts[settings
+                                                .fontFamily]!(
+                                              color: numberColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         sermon.title,
-                                        style: GoogleFonts.tajawal(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.3,
-                                          color: titleColor,
-                                        ),
+                                        style:
+                                            settings.fonts[settings
+                                                .fontFamily]!(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.3,
+                                              color: titleColor,
+                                            ),
                                       ),
                                     ),
                                     if (context
@@ -352,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : sermon.text,
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.amiri(
+                                    style: settings.fonts[settings.fontFamily]!(
                                       fontSize: 16,
                                       color: textColor,
                                       height: 1.8,
@@ -373,13 +397,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showJumpToSermonDialog(BuildContext context) {
     final TextEditingController numberController = TextEditingController();
+    // We need to access settings here too.
+    // Since it's a dialog builder, we can get it from the dialog's context
+    // or pass it in. But using context.watch inside the builder is better.
     showDialog(
       context: context,
       builder: (context) {
+        final settings = context.watch<SettingsProvider>();
         return AlertDialog(
           title: Text(
             'اذهب إلى الخطبة برقم',
-            style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+            style: settings.fonts[settings.fontFamily]!(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: TextField(
             controller: numberController,
@@ -398,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'إلغاء',
-                style: GoogleFonts.tajawal(color: Colors.grey),
+                style: settings.fonts[settings.fontFamily]!(color: Colors.grey),
               ),
             ),
             ElevatedButton(
@@ -407,7 +437,9 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               child: Text(
                 'اذهب',
-                style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+                style: settings.fonts[settings.fontFamily]!(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -418,6 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleJumpToSermon(BuildContext context, String input) {
     if (input.isNotEmpty) {
+      final settings = context.read<SettingsProvider>();
       final number = int.tryParse(input);
       if (number != null && number > 0 && number <= _allSermons.length) {
         Navigator.pop(context); // Close dialog
@@ -427,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SnackBar(
             content: Text(
               'رقم غير صحيح (1-${_allSermons.length})',
-              style: GoogleFonts.tajawal(),
+              style: settings.fonts[settings.fontFamily]!(),
             ),
             backgroundColor: Colors.red,
           ),

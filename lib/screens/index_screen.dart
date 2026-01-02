@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../services/data_service.dart';
@@ -7,7 +7,10 @@ import '../providers/settings_provider.dart';
 import 'detail_screen.dart';
 
 class IndexScreen extends StatefulWidget {
-  const IndexScreen({super.key});
+  final String jsonPath;
+  final String title;
+
+  const IndexScreen({super.key, required this.jsonPath, required this.title});
 
   @override
   State<IndexScreen> createState() => _IndexScreenState();
@@ -25,7 +28,7 @@ class _IndexScreenState extends State<IndexScreen> {
   }
 
   Future<void> _loadData() async {
-    final sermons = await _dataService.loadData();
+    final sermons = await _dataService.loadData(jsonPath: widget.jsonPath);
     if (mounted) {
       setState(() {
         _allSermons = sermons;
@@ -39,8 +42,8 @@ class _IndexScreenState extends State<IndexScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'فهرس الخطب',
-          style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+          widget.title,
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -112,7 +115,8 @@ class _IndexScreenState extends State<IndexScreen> {
                             ),
                             child: Text(
                               "${index + 1}",
-                              style: GoogleFonts.tajawal(
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: numberColor,
@@ -129,7 +133,8 @@ class _IndexScreenState extends State<IndexScreen> {
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.tajawal(
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 height: 1.2,

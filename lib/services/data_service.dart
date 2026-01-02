@@ -6,13 +6,17 @@ import '../utils/arabic_utils.dart';
 class DataService {
   List<SermonModel> _allItems = [];
 
-  Future<List<SermonModel>> loadData() async {
-    if (_allItems.isNotEmpty) return _allItems;
+  Future<List<SermonModel>> loadData({String? jsonPath}) async {
+    // If we already have data and no specific path is requested (or same path), we could return cached.
+    // However, since we want to support different datasets, we might want to reload if the path changes.
+    // For simplicity in this refactor, we will just load what is requested.
+    // If we want caching per path, we'd need a Map<String, List<SermonModel>> cache.
+    // For now, let's keep it simple and just load.
+
+    final path = jsonPath ?? 'assets/scraped_output_cleaned.json';
 
     try {
-      final String response = await rootBundle.loadString(
-        'assets/scraped_output_cleaned.json',
-      );
+      final String response = await rootBundle.loadString(path);
       final Map<String, dynamic> data = json.decode(response);
 
       _allItems = data.entries.map((entry) {
@@ -23,9 +27,11 @@ class DataService {
       }).toList();
 
       return _allItems;
-    } catch (e) {
-      print("Error loading data: $e");
-      return [];
+    } catch (e, stackTrace) {
+      print("❌ Error loading data from $path");
+      print("Error: $e");
+      print("Stack trace: $stackTrace");
+      throw Exception("Failed to load data: $e");
     }
   }
 

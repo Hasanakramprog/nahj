@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../providers/bookmarks_provider.dart';
@@ -41,7 +41,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
       appBar: AppBar(
         title: Text(
           'المحفوظات',
-          style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+          style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -67,7 +67,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'لا توجد خطب محفوظة',
-                          style: GoogleFonts.tajawal(
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
                             fontSize: 18,
                             color: Colors.grey,
                           ),
@@ -150,7 +151,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                                       alignment: Alignment.center,
                                       child: Text(
                                         "$originalIndex",
-                                        style: GoogleFonts.tajawal(
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
                                           color: numberColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
@@ -161,7 +163,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                                     Expanded(
                                       child: Text(
                                         sermon.title,
-                                        style: GoogleFonts.tajawal(
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
                                           height: 1.3,
@@ -186,7 +189,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                                         : sermon.text,
                                     maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.amiri(
+                                    style: TextStyle(
+                                      fontFamily: 'Amiri',
                                       fontSize: 16,
                                       color: textColor,
                                       height: 1.8,

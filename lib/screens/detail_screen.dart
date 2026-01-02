@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -7,6 +7,8 @@ import '../models/content_model.dart';
 import '../providers/bookmarks_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/arabic_utils.dart';
+
+import 'package:google_fonts/google_fonts.dart';
 
 class DetailScreen extends StatefulWidget {
   final SermonModel sermon;
@@ -271,7 +273,7 @@ class _DetailScreenState extends State<DetailScreen> {
                             isBookmarked
                                 ? 'تم الإزالة من المحفوظات'
                                 : 'تم الحفظ في المحفوظات',
-                            style: GoogleFonts.tajawal(),
+                            style: TextStyle(fontFamily: 'Tajawal'),
                           ),
                           duration: const Duration(seconds: 1),
                           backgroundColor: isDark
@@ -361,7 +363,8 @@ class _DetailScreenState extends State<DetailScreen> {
                           children: [
                             Text(
                               'حجم الخط',
-                              style: GoogleFonts.tajawal(
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
                                 fontSize: 14,
                                 color: textColor,
                                 fontWeight: FontWeight.w600,
@@ -395,7 +398,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                     ),
                                     child: Text(
                                       '${settings.fontSize.toInt()}',
-                                      style: GoogleFonts.tajawal(
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                         color: titleColor,
@@ -490,7 +494,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                 const SizedBox(width: 8),
                                 Text(
                                   isDark ? 'الوضع الداكن' : 'الوضع الفاتح',
-                                  style: GoogleFonts.tajawal(
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
                                     fontSize: 14,
                                     color: textColor,
                                     fontWeight: FontWeight.w600,
@@ -535,7 +540,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                 const SizedBox(width: 8),
                                 Text(
                                   'خلفية تاريخية',
-                                  style: GoogleFonts.tajawal(
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
                                     fontSize: 14,
                                     color: textColor,
                                     fontWeight: FontWeight.w600,

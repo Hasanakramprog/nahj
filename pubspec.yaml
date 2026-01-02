@@ -35,7 +35,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
-  google_fonts: ^6.3.2
+  google_fonts: ^6.2.1
+
   share_plus: ^12.0.1
   intl: ^0.20.2
   flutter_localizations:
@@ -77,6 +78,7 @@ flutter:
     - assets/output.json
     - assets/scraped_output.json
     - assets/scraped_output_cleaned.json
+    - assets/letters_output_cleaned.json
     - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
