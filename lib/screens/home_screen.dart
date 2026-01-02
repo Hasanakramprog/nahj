@@ -221,22 +221,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: _filteredSermons.length,
                 itemBuilder: (context, index) {
                   final sermon = _filteredSermons[index];
-                  // Clean title for Hero tag
                   final heroTag = 'sermon_${sermon.title.hashCode}';
 
-                  // Get dark mode status
-                  final isDark = context.watch<SettingsProvider>().isDarkMode;
-                  final titleColor = isDark ? Colors.amber : Colors.black;
+                  final settings = context.watch<SettingsProvider>();
+                  final isDark = settings.isDarkMode;
+                  final useHistoric = settings.useHistoricBackground;
+
+                  final titleColor = isDark
+                      ? Colors.amber
+                      : const Color(0xFF5D4037);
                   final numberColor = isDark
                       ? Colors.amber
                       : Theme.of(context).primaryColor;
-                  final textColor = isDark ? Colors.white : Colors.grey[700];
+                  final textColor = isDark
+                      ? Colors.white
+                      : const Color(0xFF4E342E);
 
                   return Hero(
                     tag: heroTag,
                     child: Card(
                       margin: const EdgeInsets.only(bottom: 16),
                       elevation: 2,
+                      clipBehavior: Clip.antiAlias,
+                      color: useHistoric ? Colors.transparent : null,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
@@ -246,95 +253,113 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 1,
                         ),
                       ),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DetailScreen(
-                                sermon: sermon,
-                                heroTag: heroTag,
-                                searchQuery: _searchController.text.isNotEmpty
-                                    ? _searchController.text
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? Colors.amber.withOpacity(0.2)
-                                          : Theme.of(
-                                              context,
-                                            ).primaryColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      "${index + 1}",
-                                      style: GoogleFonts.tajawal(
-                                        color: numberColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: useHistoric
+                            ? BoxDecoration(
+                                image: DecorationImage(
+                                  image: const AssetImage(
+                                    'assets/images/old_paper_texture.png',
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      sermon.title,
-                                      style: GoogleFonts.tajawal(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1.3,
-                                        color: titleColor,
-                                      ),
-                                    ),
-                                  ),
-                                  if (context
-                                      .watch<BookmarksProvider>()
-                                      .isBookmarked(sermon.title))
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                      child: Icon(
-                                        Icons.bookmark,
-                                        color: Colors.amber,
-                                        size: 20,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              if (sermon.text.isNotEmpty)
-                                Text(
-                                  sermon.text.contains('\n\n')
-                                      ? sermon.text.substring(
-                                          0,
-                                          sermon.text.indexOf('\n\n'),
+                                  fit: BoxFit.fill,
+                                  colorFilter: isDark
+                                      ? ColorFilter.mode(
+                                          Colors.black.withOpacity(0.8),
+                                          BlendMode.darken,
                                         )
-                                      : sermon.text,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.amiri(
-                                    fontSize: 16,
-                                    color: textColor,
-                                    height: 1.8,
-                                  ),
+                                      : null,
                                 ),
-                            ],
+                              )
+                            : null,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailScreen(
+                                  sermon: sermon,
+                                  heroTag: heroTag,
+                                  searchQuery: _searchController.text.isNotEmpty
+                                      ? _searchController.text
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.amber.withOpacity(0.2)
+                                            : Theme.of(
+                                                context,
+                                              ).primaryColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        "${index + 1}",
+                                        style: GoogleFonts.tajawal(
+                                          color: numberColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        sermon.title,
+                                        style: GoogleFonts.tajawal(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.3,
+                                          color: titleColor,
+                                        ),
+                                      ),
+                                    ),
+                                    if (context
+                                        .watch<BookmarksProvider>()
+                                        .isBookmarked(sermon.title))
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                        ),
+                                        child: Icon(
+                                          Icons.bookmark,
+                                          color: Colors.amber,
+                                          size: 20,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                if (sermon.text.isNotEmpty)
+                                  Text(
+                                    sermon.text.contains('\n\n')
+                                        ? sermon.text.substring(
+                                            0,
+                                            sermon.text.indexOf('\n\n'),
+                                          )
+                                        : sermon.text,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.amiri(
+                                      fontSize: 16,
+                                      color: textColor,
+                                      height: 1.8,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

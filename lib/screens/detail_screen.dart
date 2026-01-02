@@ -177,11 +177,15 @@ class _DetailScreenState extends State<DetailScreen> {
     return Consumer<SettingsProvider>(
       builder: (context, settings, child) {
         final isDark = settings.isDarkMode;
-        final backgroundColor = isDark ? const Color(0xFF1a1a1a) : Colors.white;
-        final textColor = isDark ? Colors.white : Colors.black87;
+        final backgroundColor = isDark
+            ? const Color(0xFF1a1a1a)
+            : const Color(0xFFF5E6CA); // Parchment Beige
+        final textColor = isDark
+            ? Colors.white
+            : const Color(0xFF4E342E); // Deep brown for text
         final titleColor = isDark
             ? Colors.amber
-            : Theme.of(context).primaryColor;
+            : const Color(0xFF5D4037); // Use primary brown for title
 
         Widget content = ScrollablePositionedList.builder(
           itemScrollController: _itemScrollController,
@@ -288,6 +292,25 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
           body: Stack(
             children: [
+              if (settings.useHistoricBackground)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: const AssetImage(
+                          'assets/images/old_paper_texture.png',
+                        ),
+                        fit: BoxFit.fill,
+                        colorFilter: isDark
+                            ? ColorFilter.mode(
+                                Colors.black.withOpacity(0.8),
+                                BlendMode.darken,
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                ),
               SafeArea(child: content),
               Positioned(
                 top: 0,
@@ -477,6 +500,52 @@ class _DetailScreenState extends State<DetailScreen> {
                                 Switch(
                                   value: isDark,
                                   onChanged: (_) => settings.toggleThemeMode(),
+                                  activeColor: Colors.amber,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Background Style Toggle
+                        InkWell(
+                          onTap: () => settings.setUseHistoricBackground(
+                            !settings.useHistoricBackground,
+                          ),
+                          borderRadius: BorderRadius.circular(25),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1a1a1a)
+                                  : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.article_outlined,
+                                  size: 20,
+                                  color: titleColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'خلفية تاريخية',
+                                  style: GoogleFonts.tajawal(
+                                    fontSize: 14,
+                                    color: textColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Switch(
+                                  value: settings.useHistoricBackground,
+                                  onChanged: (val) =>
+                                      settings.setUseHistoricBackground(val),
                                   activeColor: Colors.amber,
                                 ),
                               ],

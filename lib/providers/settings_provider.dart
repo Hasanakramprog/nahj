@@ -6,15 +6,18 @@ class SettingsProvider extends ChangeNotifier {
   static const String _fontSizeKey = 'fontSize';
   static const String _themeModeKey = 'themeMode';
   static const String _fontFamilyKey = 'fontFamily';
+  static const String _useHistoricBackgroundKey = 'useHistoricBackground';
 
   double _fontSize = 20.0;
   ThemeMode _themeMode = ThemeMode.light;
   String _fontFamily = 'Amiri';
+  bool _useHistoricBackground = true;
 
   double get fontSize => _fontSize;
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
   String get fontFamily => _fontFamily;
+  bool get useHistoricBackground => _useHistoricBackground;
 
   SettingsProvider() {
     _loadSettings();
@@ -56,6 +59,7 @@ class SettingsProvider extends ChangeNotifier {
     final themeModeIndex = prefs.getInt(_themeModeKey) ?? ThemeMode.light.index;
     _themeMode = ThemeMode.values[themeModeIndex];
     _fontFamily = prefs.getString(_fontFamilyKey) ?? 'Amiri';
+    _useHistoricBackground = prefs.getBool(_useHistoricBackgroundKey) ?? true;
     notifyListeners();
   }
 
@@ -64,6 +68,13 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_fontSizeKey, size);
+  }
+
+  Future<void> setUseHistoricBackground(bool value) async {
+    _useHistoricBackground = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_useHistoricBackgroundKey, value);
   }
 
   Future<void> setFontFamily(String family) async {

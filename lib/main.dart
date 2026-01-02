@@ -29,15 +29,22 @@ class NahjApp extends StatelessWidget {
             theme: ThemeData(
               useMaterial3: true,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF00695C), // Islamic Teal
-                secondary: const Color(0xFFFFC107), // Gold accent
-                surface: const Color(0xFFFAFAFA), // Cream background
+                seedColor: const Color(0xFF5D4037), // Deep Brown
+                secondary: const Color(0xFFC19A6B), // Desert Sand
+                surface: const Color(0xFFF5E6CA), // Parchment Beige
               ),
-              scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+              scaffoldBackgroundColor: const Color(0xFFF5E6CA),
               appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFF00695C),
-                foregroundColor: Colors.white,
-                elevation: 0,
+                backgroundColor: Color(0xFF5D4037),
+                foregroundColor: Color(0xFFF5E6CA),
+                elevation: 2,
+              ),
+              cardTheme: CardThemeData(
+                color: const Color(0xFFFDF5E6), // Old Lace for cards
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               textTheme: GoogleFonts.tajawalTextTheme(),
             ),
