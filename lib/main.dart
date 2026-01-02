@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'providers/bookmarks_provider.dart';
 import 'providers/settings_provider.dart';
@@ -105,24 +104,7 @@ class NahjApp extends StatelessWidget {
               Locale('ar', ''), // Arabic
             ],
             locale: const Locale('ar', ''),
-            builder: (context, child) {
-              return Theme(
-                data: Theme.of(context).copyWith(
-                  textTheme: (switch (settings.fontFamily) {
-                    'Amiri' => GoogleFonts.amiriTextTheme(
-                      Theme.of(context).textTheme,
-                    ),
-                    'Cairo' => GoogleFonts.cairoTextTheme(
-                      Theme.of(context).textTheme,
-                    ),
-                    _ => GoogleFonts.tajawalTextTheme(
-                      Theme.of(context).textTheme,
-                    ),
-                  }).apply(fontFamilyFallback: ['Arial', 'Helvetica']),
-                ),
-                child: child!,
-              );
-            },
+
             home: const MainMenuScreen(),
           );
         },
