@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../providers/bookmarks_provider.dart';
-import '../providers/settings_provider.dart';
+
 import '../services/data_service.dart';
 import 'detail_screen.dart';
 
@@ -87,7 +87,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     final heroTag = 'bookmark_sermon_${sermon.title.hashCode}';
 
                     // Get dark mode status
-                    final isDark = context.watch<SettingsProvider>().isDarkMode;
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
                     final titleColor = isDark ? Colors.amber : Colors.black;
                     final numberColor = isDark
                         ? Colors.amber
@@ -120,6 +121,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                                 pageBuilder: (_, __, ___) => DetailScreen(
                                   sermon: sermon,
                                   heroTag: heroTag,
+                                  allSermons: savedSermons,
+                                  currentIndex: index,
                                 ),
                                 transitionsBuilder: (_, animation, __, child) {
                                   return FadeTransition(

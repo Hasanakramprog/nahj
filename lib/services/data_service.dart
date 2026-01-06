@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/content_model.dart';
 import '../utils/arabic_utils.dart';
@@ -16,8 +17,11 @@ class DataService {
     final path = jsonPath ?? 'assets/scraped_output_cleaned.json';
 
     try {
+      debugPrint('📖 Loading data from: $path');
       final String response = await rootBundle.loadString(path);
+      debugPrint('✅ JSON loaded, parsing...');
       final Map<String, dynamic> data = json.decode(response);
+      debugPrint('✅ JSON parsed, creating models...');
 
       _allItems = data.entries.map((entry) {
         return SermonModel.fromJson(
@@ -26,11 +30,12 @@ class DataService {
         );
       }).toList();
 
+      debugPrint('✅ Loaded ${_allItems.length} items');
       return _allItems;
     } catch (e, stackTrace) {
-      print("❌ Error loading data from $path");
-      print("Error: $e");
-      print("Stack trace: $stackTrace");
+      debugPrint("❌ Error loading data from $path");
+      debugPrint("Error: $e");
+      debugPrint("Stack trace: $stackTrace");
       throw Exception("Failed to load data: $e");
     }
   }

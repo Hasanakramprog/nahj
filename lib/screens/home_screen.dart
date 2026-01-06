@@ -8,6 +8,7 @@ import '../providers/settings_provider.dart';
 import 'bookmarks_screen.dart';
 import 'detail_screen.dart';
 import 'index_screen.dart';
+import 'main_menu_screen.dart';
 
 class ContentListScreen extends StatefulWidget {
   final String title;
@@ -106,7 +107,7 @@ class _ContentListScreenState extends State<ContentListScreen> {
   Widget build(BuildContext context) {
     // Watch settings at the top level of build
     final settings = context.watch<SettingsProvider>();
-    final isDark = settings.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final useHistoric = settings.useHistoricBackground;
 
     return Scaffold(
@@ -125,9 +126,13 @@ class _ContentListScreenState extends State<ContentListScreen> {
           children: [
             IconButton(
               icon: Icon(
-                settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                settings.useSystemTheme
+                    ? Icons.brightness_auto
+                    : (isDark ? Icons.light_mode : Icons.dark_mode),
               ),
-              tooltip: settings.isDarkMode ? 'الوضع الفاتح' : 'الوضع الداكن',
+              tooltip: settings.useSystemTheme
+                  ? 'تلقائي (حسب النظام)'
+                  : (isDark ? 'الوضع الفاتح' : 'الوضع الداكن'),
               onPressed: () => settings.toggleThemeMode(),
             ),
             Tooltip(
@@ -302,6 +307,8 @@ class _ContentListScreenState extends State<ContentListScreen> {
                                   searchQuery: _searchController.text.isNotEmpty
                                       ? _searchController.text
                                       : null,
+                                  allSermons: _allSermons,
+                                  currentIndex: _allSermons.indexOf(sermon),
                                 ),
                               ),
                             );
@@ -392,6 +399,41 @@ class _ContentListScreenState extends State<ContentListScreen> {
                 },
               ),
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MainMenuScreen()),
+            (route) => false,
+          );
+        },
+        backgroundColor: isDark ? const Color(0xFF2d2d2d) : Colors.white,
+        icon: Icon(
+          Icons.home_rounded,
+          color: isDark ? Colors.amber : const Color(0xFF5D4037),
+          size: 24,
+        ),
+        label: Text(
+          'القائمة الرئيسية',
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            color: isDark ? Colors.amber : const Color(0xFF5D4037),
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+          side: BorderSide(
+            color: isDark
+                ? Colors.amber.withOpacity(0.5)
+                : const Color(0xFF8D6E63),
+            width: 2,
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -485,6 +527,8 @@ class _ContentListScreenState extends State<ContentListScreen> {
             searchQuery: _searchController.text.isNotEmpty
                 ? _searchController.text
                 : null,
+            allSermons: _allSermons,
+            currentIndex: index,
           ),
         ),
       );

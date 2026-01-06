@@ -8,15 +8,23 @@ class BookmarksProvider with ChangeNotifier {
   Set<String> get bookmarkedTitles => _bookmarkedTitles;
 
   BookmarksProvider() {
-    _loadBookmarks();
+    _loadBookmarks().catchError((error) {
+      debugPrint('Error loading bookmarks: $error');
+      // Continue with empty bookmarks if loading fails
+    });
   }
 
   Future<void> _loadBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String>? stored = prefs.getStringList(_storageKey);
-    if (stored != null) {
-      _bookmarkedTitles = stored.toSet();
-      notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String>? stored = prefs.getStringList(_storageKey);
+      if (stored != null) {
+        _bookmarkedTitles = stored.toSet();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading bookmarks: $e');
+      // Continue with empty set
     }
   }
 
@@ -27,7 +35,9 @@ class BookmarksProvider with ChangeNotifier {
       _bookmarkedTitles.add(title);
     }
     notifyListeners();
-    await _saveBookmarks();
+    _saveBookmarks().catchError((error) {
+      debugPrint('Error saving bookmarks: $error');
+    });
   }
 
   bool isBookmarked(String title) {
@@ -35,7 +45,12 @@ class BookmarksProvider with ChangeNotifier {
   }
 
   Future<void> _saveBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_storageKey, _bookmarkedTitles.toList());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_storageKey, _bookmarkedTitles.toList());
+    } catch (e) {
+      debugPrint('Error saving bookmarks: $e');
+      rethrow;
+    }
   }
 }

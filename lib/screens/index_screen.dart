@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:provider/provider.dart';
 import '../models/content_model.dart';
 import '../services/data_service.dart';
-import '../providers/settings_provider.dart';
+
 import 'detail_screen.dart';
 
 class IndexScreen extends StatefulWidget {
@@ -64,7 +63,7 @@ class _IndexScreenState extends State<IndexScreen> {
                 final heroTag = 'index_grid_${sermon.title.hashCode}';
 
                 // Get dark mode status
-                final isDark = context.watch<SettingsProvider>().isDarkMode;
+                final isDark = Theme.of(context).brightness == Brightness.dark;
                 final cardColor = isDark
                     ? const Color(0xFF2d2d2d)
                     : Colors.white;
@@ -93,8 +92,12 @@ class _IndexScreenState extends State<IndexScreen> {
                             transitionDuration: const Duration(
                               milliseconds: 600,
                             ),
-                            pageBuilder: (_, __, ___) =>
-                                DetailScreen(sermon: sermon, heroTag: heroTag),
+                            pageBuilder: (_, __, ___) => DetailScreen(
+                              sermon: sermon,
+                              heroTag: heroTag,
+                              allSermons: _allSermons,
+                              currentIndex: index,
+                            ),
                             transitionsBuilder: (_, animation, __, child) {
                               return FadeTransition(
                                 opacity: animation,

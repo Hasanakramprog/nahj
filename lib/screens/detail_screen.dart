@@ -8,55 +8,59 @@ import '../providers/bookmarks_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/arabic_utils.dart';
 
-import 'package:google_fonts/google_fonts.dart';
-
 class DetailScreen extends StatefulWidget {
   final SermonModel sermon;
   final String? heroTag;
   final String? searchQuery;
+  final List<SermonModel>? allSermons;
+  final int? currentIndex;
 
   const DetailScreen({
     super.key,
     required this.sermon,
     this.heroTag,
     this.searchQuery,
+    this.allSermons,
+    this.currentIndex,
   });
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
 }
 
-class _DetailScreenState extends State<DetailScreen> {
+// Separate widget for scrollable content to avoid controller conflicts
+class _SermonContent extends StatefulWidget {
+  final SermonModel sermon;
+  final String? searchQuery;
+  final SettingsProvider settings;
+  final bool isDark;
+  final ValueChanged<double> onProgressChanged;
+
+  const _SermonContent({
+    super.key,
+    required this.sermon,
+    required this.searchQuery,
+    required this.settings,
+    required this.isDark,
+    required this.onProgressChanged,
+  });
+
+  @override
+  State<_SermonContent> createState() => _SermonContentState();
+}
+
+class _SermonContentState extends State<_SermonContent> {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   List<String> _paragraphs = [];
-  double _readingProgress = 0.0;
-  bool _showControls = false;
   int? _firstMatchIndex;
 
   @override
   void initState() {
     super.initState();
-    _paragraphs = ArabicUtils.splitByPeriods(widget.sermon.text);
+    _loadSermonContent();
     _itemPositionsListener.itemPositions.addListener(_onScroll);
-
-    // Find first match if search query exists
-    if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
-      final query = ArabicUtils.normalize(widget.searchQuery!);
-      for (int i = 0; i < _paragraphs.length; i++) {
-        if (ArabicUtils.normalize(_paragraphs[i]).contains(query)) {
-          _firstMatchIndex = i + 2; // +2 for Title and Divider
-          break;
-        }
-      }
-
-      if (_firstMatchIndex != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _itemScrollController.jumpTo(index: _firstMatchIndex!);
-        });
-      }
-    }
   }
 
   @override
@@ -65,47 +69,54 @@ class _DetailScreenState extends State<DetailScreen> {
     super.dispose();
   }
 
-  void _onScroll() {
-    final positions = _itemPositionsListener.itemPositions.value;
-    if (positions.isEmpty) return;
+  void _loadSermonContent() {
+    _paragraphs = ArabicUtils.splitByPeriods(widget.sermon.text);
 
-    // Filter out invisible items if any (sometimes listener returns items with negative index or off-screen)
-    // Though usually it returns visible items.
-
-    // Sort to be sure
-    final sorted = positions.toList()
-      ..sort((a, b) => a.index.compareTo(b.index));
-    final lastRequestIndex = sorted.last.index;
-
-    // Total items count is _paragraphs.length + 2.
-    // Indices are 0 to (_paragraphs.length + 1).
-    final maxIndex = _paragraphs.length + 1;
-
-    if (maxIndex <= 0) {
-      setState(() => _readingProgress = 1.0);
-      return;
+    // Find first match if search query exists
+    if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
+      final query = ArabicUtils.normalize(widget.searchQuery!);
+      _firstMatchIndex = null;
+      for (int i = 0; i < _paragraphs.length; i++) {
+        if (ArabicUtils.normalize(_paragraphs[i]).contains(query)) {
+          _firstMatchIndex = i + 2; // +2 for Title and Divider
+          break;
+        }
+      }
     }
 
-    setState(() {
-      // If we are at the very end, make sure it is 1.0
-      if (lastRequestIndex >= maxIndex) {
-        _readingProgress = 1.0;
-      } else {
-        // Calculate progress ratio
-        _readingProgress = (lastRequestIndex / maxIndex).clamp(0.0, 1.0);
+    // Reset scroll position
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_itemScrollController.isAttached) {
+        if (_firstMatchIndex != null) {
+          _itemScrollController.jumpTo(index: _firstMatchIndex!);
+        } else {
+          _itemScrollController.jumpTo(index: 0);
+        }
       }
     });
   }
 
-  void _shareContent(BuildContext context) {
-    final String content = "${widget.sermon.title}\n\n${widget.sermon.text}";
-    Share.share(content);
-  }
+  void _onScroll() {
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
 
-  void _toggleControls() {
-    setState(() {
-      _showControls = !_showControls;
-    });
+    final sorted = positions.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    final lastRequestIndex = sorted.last.index;
+    final maxIndex = _paragraphs.length + 1;
+
+    if (maxIndex <= 0) {
+      widget.onProgressChanged(1.0);
+      return;
+    }
+
+    double progress;
+    if (lastRequestIndex >= maxIndex) {
+      progress = 1.0;
+    } else {
+      progress = (lastRequestIndex / maxIndex).clamp(0.0, 1.0);
+    }
+    widget.onProgressChanged(progress);
   }
 
   TextSpan _buildHighlightedText(String text, TextStyle style) {
@@ -116,16 +127,13 @@ class _DetailScreenState extends State<DetailScreen> {
     final String query = ArabicUtils.normalize(widget.searchQuery!);
     if (query.isEmpty) return TextSpan(text: text, style: style);
 
-    // Build a regex that matches the query in the original text, ignoring diacritics
     StringBuffer buffer = StringBuffer();
     for (int i = 0; i < query.length; i++) {
       String char = query[i];
-      // Escape special regex characters
       if (RegExp(r'[.\[\]{}()\\*+?|^$]').hasMatch(char)) {
         char = '\\$char';
       }
 
-      // Handle character variations
       if (char == 'ا') {
         buffer.write('[اأإآ]');
       } else if (char == 'ي') {
@@ -136,7 +144,6 @@ class _DetailScreenState extends State<DetailScreen> {
         buffer.write(char);
       }
 
-      // Allow diacritics between characters
       buffer.write(r'[\u064B-\u065F\u06D6-\u06ED]*');
     }
 
@@ -145,20 +152,18 @@ class _DetailScreenState extends State<DetailScreen> {
     int start = 0;
 
     for (final Match match in regex.allMatches(text)) {
-      // Text before match
       if (match.start > start) {
         spans.add(
           TextSpan(text: text.substring(start, match.start), style: style),
         );
       }
 
-      // Highlighted match
       spans.add(
         TextSpan(
           text: text.substring(match.start, match.end),
           style: style.copyWith(
             backgroundColor: Colors.amber.withOpacity(0.5),
-            color: Colors.black, // Ensure contrast to be visible on highlight
+            color: Colors.black,
           ),
         ),
       );
@@ -166,7 +171,6 @@ class _DetailScreenState extends State<DetailScreen> {
       start = match.end;
     }
 
-    // Remaining text
     if (start < text.length) {
       spans.add(TextSpan(text: text.substring(start), style: style));
     }
@@ -176,9 +180,116 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = widget.isDark ? Colors.white : const Color(0xFF4E342E);
+    final titleColor = widget.isDark ? Colors.amber : const Color(0xFF5D4037);
+
+    return ScrollablePositionedList.builder(
+      itemScrollController: _itemScrollController,
+      itemPositionsListener: _itemPositionsListener,
+      padding: const EdgeInsets.all(20.0),
+      itemCount: _paragraphs.length + 2,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20.0),
+            child: SelectableText(
+              widget.sermon.title,
+              textAlign: TextAlign.center,
+              style: widget.settings.fonts[widget.settings.fontFamily]!(
+                fontSize: widget.settings.fontSize + 2,
+                fontWeight: FontWeight.bold,
+                color: titleColor,
+                height: 1.5,
+              ),
+            ),
+          );
+        } else if (index == 1) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20.0),
+            child: Divider(
+              thickness: 1,
+              color: widget.isDark ? Colors.grey[700] : null,
+            ),
+          );
+        } else {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+            child: SelectableText.rich(
+              _buildHighlightedText(
+                _paragraphs[index - 2],
+                widget.settings.fonts[widget.settings.fontFamily]!(
+                  fontSize: widget.settings.fontSize,
+                  height: 1.8,
+                  color: textColor,
+                ),
+              ),
+              textAlign: TextAlign.justify,
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
+class _DetailScreenState extends State<DetailScreen> {
+  double _readingProgress = 0.0;
+  bool _showControls = false;
+
+  late SermonModel _currentSermon;
+  late int? _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentSermon = widget.sermon;
+    _currentIndex = widget.currentIndex;
+  }
+
+  void _shareContent(BuildContext context) {
+    final String content = "${_currentSermon.title}\n\n${_currentSermon.text}";
+    Share.share(content);
+  }
+
+  void _toggleControls() {
+    setState(() {
+      _showControls = !_showControls;
+    });
+  }
+
+  void _navigateToSermon(int newIndex) {
+    if (widget.allSermons == null ||
+        newIndex < 0 ||
+        newIndex >= widget.allSermons!.length) {
+      return;
+    }
+
+    setState(() {
+      _currentSermon = widget.allSermons![newIndex];
+      _currentIndex = newIndex;
+      _readingProgress = 0.0;
+    });
+  }
+
+  void _navigateToPrevious() {
+    if (_currentIndex != null && _currentIndex! > 0) {
+      _navigateToSermon(_currentIndex! - 1);
+    }
+  }
+
+  void _navigateToNext() {
+    if (_currentIndex != null &&
+        widget.allSermons != null &&
+        _currentIndex! < widget.allSermons!.length - 1) {
+      _navigateToSermon(_currentIndex! + 1);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Consumer<SettingsProvider>(
       builder: (context, settings, child) {
-        final isDark = settings.isDarkMode;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final backgroundColor = isDark
             ? const Color(0xFF1a1a1a)
             : const Color(0xFFF5E6CA); // Parchment Beige
@@ -189,63 +300,16 @@ class _DetailScreenState extends State<DetailScreen> {
             ? Colors.amber
             : const Color(0xFF5D4037); // Use primary brown for title
 
-        Widget content = ScrollablePositionedList.builder(
-          itemScrollController: _itemScrollController,
-          itemPositionsListener: _itemPositionsListener,
-          padding: const EdgeInsets.all(20.0),
-          itemCount: _paragraphs.length + 2, // Title + Divider + Paragraphs
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              // Title
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 20.0),
-                child: SelectableText(
-                  widget.sermon.title,
-                  textAlign: TextAlign.center,
-                  style: settings.fonts[settings.fontFamily]!(
-                    fontSize: settings.fontSize + 2,
-                    fontWeight: FontWeight.bold,
-                    color: titleColor,
-                    height: 1.5,
-                  ),
-                ),
-              );
-            } else if (index == 1) {
-              // Divider
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 20.0),
-                child: Divider(
-                  thickness: 1,
-                  color: isDark ? Colors.grey[700] : null,
-                ),
-              );
-            } else {
-              // Paragraphs
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-                child: SelectableText.rich(
-                  _buildHighlightedText(
-                    _paragraphs[index - 2],
-                    settings.fonts[settings.fontFamily]!(
-                      fontSize: settings.fontSize,
-                      height: 1.8,
-                      color: textColor,
-                    ),
-                  ),
-                  textAlign: TextAlign.justify,
-                ),
-              );
-            }
-          },
-        );
-
         return Scaffold(
           backgroundColor: backgroundColor,
           appBar: AppBar(
             backgroundColor: isDark ? const Color(0xFF2d2d2d) : null,
-            title: Text(
+            title: const Text(
               "نهج البلاغة",
-              style: GoogleFonts.tajawal(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontWeight: FontWeight.bold,
+              ),
             ),
             centerTitle: true,
             actions: [
@@ -257,7 +321,7 @@ class _DetailScreenState extends State<DetailScreen> {
               Consumer<BookmarksProvider>(
                 builder: (context, bookmarks, child) {
                   final isBookmarked = bookmarks.isBookmarked(
-                    widget.sermon.title,
+                    _currentSermon.title,
                   );
                   return IconButton(
                     icon: Icon(
@@ -266,7 +330,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                     tooltip: isBookmarked ? 'إزالة من المحفوظات' : 'حفظ الخطبة',
                     onPressed: () {
-                      bookmarks.toggleBookmark(widget.sermon.title);
+                      bookmarks.toggleBookmark(_currentSermon.title);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -313,7 +377,33 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                   ),
                 ),
-              SafeArea(child: content),
+              GestureDetector(
+                onHorizontalDragEnd: (details) {
+                  final velocity = details.primaryVelocity ?? 0;
+                  // Swipe right (to go to previous)
+                  if (velocity > 500) {
+                    _navigateToPrevious();
+                  }
+                  // Swipe left (to go to next)
+                  else if (velocity < -500) {
+                    _navigateToNext();
+                  }
+                },
+                child: SafeArea(
+                  child: _SermonContent(
+                    key: ValueKey<String>(_currentSermon.title),
+                    sermon: _currentSermon,
+                    searchQuery: widget.searchQuery,
+                    settings: settings,
+                    isDark: isDark,
+                    onProgressChanged: (progress) {
+                      setState(() {
+                        _readingProgress = progress;
+                      });
+                    },
+                  ),
+                ),
+              ),
               Positioned(
                 top: 0,
                 left: 0,
@@ -565,6 +655,180 @@ class _DetailScreenState extends State<DetailScreen> {
               ],
             ],
           ),
+          floatingActionButton:
+              widget.allSermons != null &&
+                  _currentIndex != null &&
+                  _readingProgress >= 0.75
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Previous Button
+                      if (_currentIndex! > 0)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF2d2d2d)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.amber.withOpacity(0.5)
+                                  : const Color(0xFF8D6E63),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(30),
+                              onTap: _navigateToPrevious,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.arrow_back_ios_rounded,
+                                      color: isDark
+                                          ? Colors.amber
+                                          : const Color(0xFF5D4037),
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'السابق',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        color: isDark
+                                            ? Colors.amber
+                                            : const Color(0xFF5D4037),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 16),
+                      // Page Indicator
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF2d2d2d)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.amber.withOpacity(0.5)
+                                : const Color(0xFF8D6E63),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          '${_currentIndex! + 1} / ${widget.allSermons!.length}',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            color: isDark
+                                ? Colors.amber
+                                : const Color(0xFF5D4037),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Next Button
+                      if (_currentIndex! < widget.allSermons!.length - 1)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF2d2d2d)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.amber.withOpacity(0.5)
+                                  : const Color(0xFF8D6E63),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(30),
+                              onTap: _navigateToNext,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'التالي',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        color: isDark
+                                            ? Colors.amber
+                                            : const Color(0xFF5D4037),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      color: isDark
+                                          ? Colors.amber
+                                          : const Color(0xFF5D4037),
+                                      size: 18,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              : null,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
         );
       },
     );

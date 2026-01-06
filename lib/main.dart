@@ -7,11 +7,14 @@ import 'providers/bookmarks_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/main_menu_screen.dart';
 
-void main() {
+void main() async {
   // Catch any errors during app initialization
   runZonedGuarded(
-    () {
+    () async {
       WidgetsFlutterBinding.ensureInitialized();
+
+      // Add a small delay to let iOS settle
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Set up error widget builder for better debugging
       ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -35,8 +38,8 @@ void main() {
       runApp(const NahjApp());
     },
     (error, stack) {
-      print('Caught error: $error');
-      print('Stack trace: $stack');
+      debugPrint('Caught error: $error');
+      debugPrint('Stack trace: $stack');
     },
   );
 }
@@ -77,6 +80,7 @@ class NahjApp extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
+              // SAFE MODE: Use default fonts
               textTheme: ThemeData.light().textTheme,
             ),
             darkTheme: ThemeData(
@@ -93,6 +97,7 @@ class NahjApp extends StatelessWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
               ),
+              // SAFE MODE: Use default dark fonts
               textTheme: ThemeData.dark().textTheme,
             ),
             localizationsDelegates: const [
@@ -104,7 +109,6 @@ class NahjApp extends StatelessWidget {
               Locale('ar', ''), // Arabic
             ],
             locale: const Locale('ar', ''),
-
             home: const MainMenuScreen(),
           );
         },

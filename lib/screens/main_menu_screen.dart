@@ -9,7 +9,7 @@ class MainMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
-    final isDark = settings.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -35,10 +35,14 @@ class MainMenuScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(
-              settings.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+              settings.useSystemTheme
+                  ? Icons.brightness_auto
+                  : (isDark ? Icons.light_mode : Icons.dark_mode),
               color: isDark ? const Color(0xFFD4AF37) : const Color(0xFF5D4037),
             ),
-            tooltip: settings.isDarkMode ? 'الوضع الفاتح' : 'الوضع الداكن',
+            tooltip: settings.useSystemTheme
+                ? 'تلقائي (حسب النظام)'
+                : (isDark ? 'الوضع الفاتح' : 'الوضع الداكن'),
             onPressed: () => settings.toggleThemeMode(),
           ),
         ],
@@ -89,7 +93,7 @@ class MainMenuScreen extends StatelessWidget {
     required String jsonPath,
   }) {
     final settings = context.watch<SettingsProvider>();
-    final isDark = settings.isDarkMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Determine display title based on the full title for NAVIGATION
     String navTitle = title;
