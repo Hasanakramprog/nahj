@@ -6,6 +6,7 @@ import '../utils/arabic_utils.dart';
 
 class DataService {
   List<SermonModel> _allItems = [];
+  Map<String, String> _explanations = {};
 
   Future<List<SermonModel>> loadData({String? jsonPath}) async {
     // If we already have data and no specific path is requested (or same path), we could return cached.
@@ -75,5 +76,45 @@ class DataService {
 
       return false;
     }).toList();
+  }
+
+  Future<void> loadExplanations() async {
+    try {
+      debugPrint('📖 Loading explanations from: assets/all_explanations.json');
+      final String response =
+          await rootBundle.loadString('assets/all_explanations.json');
+      debugPrint('✅ Explanations JSON loaded, parsing...');
+      final Map<String, dynamic> data = json.decode(response);
+      
+      // Convert to Map<String, String>
+      _explanations = data.map((key, value) => MapEntry(key, value.toString()));
+      
+      debugPrint('✅ Loaded ${_explanations.length} explanations');
+    } catch (e, stackTrace) {
+      debugPrint("❌ Error loading explanations");
+      debugPrint("Error: $e");
+      debugPrint("Stack trace: $stackTrace");
+      // Don't throw - explanations are optional
+      _explanations = {};
+    }
+  }
+
+  String? getExplanation(String sermonTitle) {
+    // Extract sermon number from title like "الخطبة 5: title"
+    // and match to key like "الخطبة5" in explanations
+    final RegExp numberRegex = RegExp(r'الخطبة\s*(\d+)');
+    final match = numberRegex.firstMatch(sermonTitle);
+    
+    if (match != null) {
+      final number = match.group(1);
+      final key = 'الخطبة$number';
+      return _explanations[key];
+    }
+    
+    return null;
+  }
+
+  bool hasExplanation(String sermonTitle) {
+    return getExplanation(sermonTitle) != null;
   }
 }

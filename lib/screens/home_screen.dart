@@ -87,6 +87,8 @@ class _ContentListScreenState extends State<ContentListScreen> {
 
   Future<void> _loadData() async {
     final sermons = await _dataService.loadData(jsonPath: widget.jsonPath);
+    // Load explanations in the background
+    _dataService.loadExplanations();
     if (mounted) {
       setState(() {
         _allSermons = sermons;
@@ -309,6 +311,7 @@ class _ContentListScreenState extends State<ContentListScreen> {
                                       : null,
                                   allSermons: _allSermons,
                                   currentIndex: _allSermons.indexOf(sermon),
+                                  dataService: _dataService,
                                 ),
                               ),
                             );
@@ -529,6 +532,7 @@ class _ContentListScreenState extends State<ContentListScreen> {
                 : null,
             allSermons: _allSermons,
             currentIndex: index,
+            dataService: _dataService,
           ),
         ),
       );

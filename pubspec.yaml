@@ -78,6 +78,7 @@ flutter:
     - assets/scraped_output.json
     - assets/scraped_output_cleaned.json
     - assets/letters_output_cleaned.json
+    - assets/all_explanations.json
     - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see

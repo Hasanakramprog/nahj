@@ -28,6 +28,8 @@ class _IndexScreenState extends State<IndexScreen> {
 
   Future<void> _loadData() async {
     final sermons = await _dataService.loadData(jsonPath: widget.jsonPath);
+    // Load explanations in the background
+    _dataService.loadExplanations();
     if (mounted) {
       setState(() {
         _allSermons = sermons;
@@ -97,6 +99,7 @@ class _IndexScreenState extends State<IndexScreen> {
                               heroTag: heroTag,
                               allSermons: _allSermons,
                               currentIndex: index,
+                              dataService: _dataService,
                             ),
                             transitionsBuilder: (_, animation, __, child) {
                               return FadeTransition(

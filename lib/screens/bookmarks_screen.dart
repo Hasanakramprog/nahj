@@ -27,6 +27,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
 
   Future<void> _loadData() async {
     final sermons = await _dataService.loadData();
+    // Load explanations in the background
+    _dataService.loadExplanations();
     if (mounted) {
       setState(() {
         _allSermons = sermons;
@@ -123,6 +125,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                                   heroTag: heroTag,
                                   allSermons: savedSermons,
                                   currentIndex: index,
+                                  dataService: _dataService,
                                 ),
                                 transitionsBuilder: (_, animation, __, child) {
                                   return FadeTransition(

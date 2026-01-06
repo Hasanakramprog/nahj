@@ -51,7 +51,7 @@ def extract_sermons_from_combined_content(all_soups: List[BeautifulSoup]) -> Dic
         if soup:
             body = soup.find('body')
             if body:
-                elements = body.find_all(['h1', 'h3', 'p'], recursive=False)
+                elements = body.find_all(['h1', 'h3', 'p'])
                 # Skip the first h1 ONLY if it's the book title (not a sermon)
                 first_h1_in_page = True
                 for element in elements:

@@ -6,7 +6,9 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../models/content_model.dart';
 import '../providers/bookmarks_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/data_service.dart';
 import '../utils/arabic_utils.dart';
+import 'explanation_detail_screen.dart';
 
 class DetailScreen extends StatefulWidget {
   final SermonModel sermon;
@@ -14,6 +16,7 @@ class DetailScreen extends StatefulWidget {
   final String? searchQuery;
   final List<SermonModel>? allSermons;
   final int? currentIndex;
+  final DataService dataService;
 
   const DetailScreen({
     super.key,
@@ -22,6 +25,7 @@ class DetailScreen extends StatefulWidget {
     this.searchQuery,
     this.allSermons,
     this.currentIndex,
+    required this.dataService,
   });
 
   @override
@@ -304,6 +308,37 @@ class _DetailScreenState extends State<DetailScreen> {
           backgroundColor: backgroundColor,
           appBar: AppBar(
             backgroundColor: isDark ? const Color(0xFF2d2d2d) : null,
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                if (widget.dataService.hasExplanation(_currentSermon.title))
+                  IconButton(
+                    icon: const Icon(Icons.lightbulb_outline),
+                    tooltip: 'التفسير',
+                    color: Colors.amber,
+                    onPressed: () {
+                      final explanation = widget.dataService.getExplanation(
+                        _currentSermon.title,
+                      );
+                      if (explanation != null) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ExplanationDetailScreen(
+                              sermonTitle: _currentSermon.title,
+                              explanationText: explanation,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+              ],
+            ),
+            leadingWidth: widget.dataService.hasExplanation(_currentSermon.title) ? 112 : 56,
             title: const Text(
               "نهج البلاغة",
               style: TextStyle(
@@ -314,9 +349,9 @@ class _DetailScreenState extends State<DetailScreen> {
             centerTitle: true,
             actions: [
               IconButton(
-                icon: Icon(_showControls ? Icons.close : Icons.settings),
-                tooltip: _showControls ? 'إخفاء الإعدادات' : 'الإعدادات',
-                onPressed: _toggleControls,
+                icon: const Icon(Icons.share),
+                tooltip: 'مشاركة الخطبة',
+                onPressed: () => _shareContent(context),
               ),
               Consumer<BookmarksProvider>(
                 builder: (context, bookmarks, child) {
@@ -350,9 +385,9 @@ class _DetailScreenState extends State<DetailScreen> {
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.share),
-                tooltip: 'مشاركة الخطبة',
-                onPressed: () => _shareContent(context),
+                icon: Icon(_showControls ? Icons.close : Icons.settings),
+                tooltip: _showControls ? 'إخفاء الإعدادات' : 'الإعدادات',
+                onPressed: _toggleControls,
               ),
             ],
           ),
