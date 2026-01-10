@@ -256,13 +256,13 @@ class _ContentListScreenState extends State<ContentListScreen> {
                   // Colors logic matches original but uses 'isDark' from top scope
                   final titleColor = isDark
                       ? Colors.amber
-                      : const Color(0xFF5D4037);
+                      : const Color(0xFF00695C); // Green for light mode
                   final numberColor = isDark
                       ? Colors.amber
                       : Theme.of(context).primaryColor;
                   final textColor = isDark
                       ? Colors.white
-                      : const Color(0xFF4E342E);
+                      : const Color(0xFF00695C); // Green for light mode
 
                   return Hero(
                     tag: heroTag,
@@ -413,14 +413,18 @@ class _ContentListScreenState extends State<ContentListScreen> {
         backgroundColor: isDark ? const Color(0xFF2d2d2d) : Colors.white,
         icon: Icon(
           Icons.home_rounded,
-          color: isDark ? Colors.amber : const Color(0xFF5D4037),
+          color: isDark
+              ? Colors.amber
+              : const Color(0xFF00695C), // Green for light mode
           size: 24,
         ),
         label: Text(
           'القائمة الرئيسية',
           style: TextStyle(
             fontFamily: 'Tajawal',
-            color: isDark ? Colors.amber : const Color(0xFF5D4037),
+            color: isDark
+                ? Colors.amber
+                : const Color(0xFF00695C), // Green for light mode
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),

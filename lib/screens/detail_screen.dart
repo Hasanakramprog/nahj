@@ -184,8 +184,12 @@ class _SermonContentState extends State<_SermonContent> {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = widget.isDark ? Colors.white : const Color(0xFF4E342E);
-    final titleColor = widget.isDark ? Colors.amber : const Color(0xFF5D4037);
+    final textColor = widget.isDark
+        ? Colors.white
+        : const Color(0xFF00695C); // Green for light mode
+    final titleColor = widget.isDark
+        ? Colors.amber
+        : const Color(0xFF00695C); // Green for light mode
 
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollController,
@@ -296,13 +300,13 @@ class _DetailScreenState extends State<DetailScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final backgroundColor = isDark
             ? const Color(0xFF1a1a1a)
-            : const Color(0xFFF5E6CA); // Parchment Beige
+            : const Color(0xFFE8F5E9); // Light green background
         final textColor = isDark
             ? Colors.white
-            : const Color(0xFF4E342E); // Deep brown for text
+            : const Color(0xFF00695C); // Green for text in light mode
         final titleColor = isDark
             ? Colors.amber
-            : const Color(0xFF5D4037); // Use primary brown for title
+            : const Color(0xFF00695C); // Green for title in light mode
 
         return Scaffold(
           backgroundColor: backgroundColor,
@@ -338,7 +342,10 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
               ],
             ),
-            leadingWidth: widget.dataService.hasExplanation(_currentSermon.title) ? 112 : 56,
+            leadingWidth:
+                widget.dataService.hasExplanation(_currentSermon.title)
+                ? 112
+                : 56,
             title: const Text(
               "نهج البلاغة",
               style: TextStyle(
@@ -738,7 +745,9 @@ class _DetailScreenState extends State<DetailScreen> {
                                       Icons.arrow_back_ios_rounded,
                                       color: isDark
                                           ? Colors.amber
-                                          : const Color(0xFF5D4037),
+                                          : const Color(
+                                              0xFF00695C,
+                                            ), // Green for light mode
                                       size: 18,
                                     ),
                                     const SizedBox(width: 8),
@@ -748,7 +757,9 @@ class _DetailScreenState extends State<DetailScreen> {
                                         fontFamily: 'Tajawal',
                                         color: isDark
                                             ? Colors.amber
-                                            : const Color(0xFF5D4037),
+                                            : const Color(
+                                                0xFF00695C,
+                                              ), // Green for light mode
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -791,7 +802,9 @@ class _DetailScreenState extends State<DetailScreen> {
                             fontFamily: 'Tajawal',
                             color: isDark
                                 ? Colors.amber
-                                : const Color(0xFF5D4037),
+                                : const Color(
+                                    0xFF00695C,
+                                  ), // Green for light mode
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -839,7 +852,9 @@ class _DetailScreenState extends State<DetailScreen> {
                                         fontFamily: 'Tajawal',
                                         color: isDark
                                             ? Colors.amber
-                                            : const Color(0xFF5D4037),
+                                            : const Color(
+                                                0xFF00695C,
+                                              ), // Green for light mode
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -849,7 +864,9 @@ class _DetailScreenState extends State<DetailScreen> {
                                       Icons.arrow_forward_ios_rounded,
                                       color: isDark
                                           ? Colors.amber
-                                          : const Color(0xFF5D4037),
+                                          : const Color(
+                                              0xFF00695C,
+                                            ), // Green for light mode
                                       size: 18,
                                     ),
                                   ],

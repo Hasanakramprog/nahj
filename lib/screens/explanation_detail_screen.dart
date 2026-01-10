@@ -95,8 +95,12 @@ class _ExplanationContentState extends State<_ExplanationContent> {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = widget.isDark ? Colors.white : const Color(0xFF4E342E);
-    final titleColor = widget.isDark ? Colors.amber : const Color(0xFF5D4037);
+    final textColor = widget.isDark
+        ? Colors.white
+        : const Color(0xFF00695C); // Green for light mode
+    final titleColor = widget.isDark
+        ? Colors.amber
+        : const Color(0xFF00695C); // Green for light mode
 
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollController,
@@ -333,7 +337,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                               style: TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontSize: 14,
-                                color: isDark ? Colors.white : const Color(0xFF4E342E),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF4E342E),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -353,7 +359,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                     iconSize: 20,
                                     color: settings.fontSize <= 14
                                         ? Colors.grey
-                                        : (isDark ? Colors.white : const Color(0xFF4E342E)),
+                                        : (isDark
+                                              ? Colors.white
+                                              : const Color(0xFF4E342E)),
                                     onPressed: settings.fontSize <= 14
                                         ? null
                                         : () => settings.decreaseFontSize(),
@@ -369,7 +377,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                         fontFamily: 'Tajawal',
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: isDark ? Colors.amber : const Color(0xFF5D4037),
+                                        color: isDark
+                                            ? Colors.amber
+                                            : const Color(0xFF5D4037),
                                       ),
                                     ),
                                   ),
@@ -378,7 +388,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                     iconSize: 20,
                                     color: settings.fontSize >= 32
                                         ? Colors.grey
-                                        : (isDark ? Colors.white : const Color(0xFF4E342E)),
+                                        : (isDark
+                                              ? Colors.white
+                                              : const Color(0xFF4E342E)),
                                     onPressed: settings.fontSize >= 32
                                         ? null
                                         : () => settings.increaseFontSize(),
@@ -408,7 +420,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                     style: settings.fonts[fontFamily]!(
                                       color: isSelected
                                           ? Colors.white
-                                          : (isDark ? Colors.white : const Color(0xFF4E342E)),
+                                          : (isDark
+                                                ? Colors.white
+                                                : const Color(0xFF4E342E)),
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.normal,
@@ -456,7 +470,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                 Icon(
                                   isDark ? Icons.dark_mode : Icons.light_mode,
                                   size: 20,
-                                  color: isDark ? Colors.amber : const Color(0xFF5D4037),
+                                  color: isDark
+                                      ? Colors.amber
+                                      : const Color(0xFF5D4037),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -464,7 +480,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                   style: TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 14,
-                                    color: isDark ? Colors.white : const Color(0xFF4E342E),
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF4E342E),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -502,7 +520,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                 Icon(
                                   Icons.article_outlined,
                                   size: 20,
-                                  color: isDark ? Colors.amber : const Color(0xFF5D4037),
+                                  color: isDark
+                                      ? Colors.amber
+                                      : const Color(0xFF5D4037),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -510,7 +530,9 @@ class _ExplanationDetailScreenState extends State<ExplanationDetailScreen> {
                                   style: TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 14,
-                                    color: isDark ? Colors.white : const Color(0xFF4E342E),
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF4E342E),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),

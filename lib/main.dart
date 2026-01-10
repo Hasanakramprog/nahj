@@ -63,18 +63,18 @@ class NahjApp extends StatelessWidget {
             theme: ThemeData(
               useMaterial3: true,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF5D4037), // Deep Brown
-                secondary: const Color(0xFFC19A6B), // Desert Sand
-                surface: const Color(0xFFF5E6CA), // Parchment Beige
+                seedColor: const Color(0xFF00695C), // Teal Green
+                secondary: const Color(0xFF4CAF50), // Light Green
+                surface: const Color(0xFFE8F5E9), // Very Light Green
               ),
-              scaffoldBackgroundColor: const Color(0xFFF5E6CA),
+              scaffoldBackgroundColor: const Color(0xFFE8F5E9),
               appBarTheme: const AppBarTheme(
-                backgroundColor: Color(0xFF5D4037),
-                foregroundColor: Color(0xFFF5E6CA),
+                backgroundColor: Color(0xFF00695C),
+                foregroundColor: Colors.white,
                 elevation: 2,
               ),
               cardTheme: CardThemeData(
-                color: const Color(0xFFFDF5E6), // Old Lace for cards
+                color: const Color(0xFFF1F8F4), // Very Pale Green for cards
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
