@@ -328,55 +328,27 @@ class _HikamDetailScreenState extends State<HikamDetailScreen> {
                 opacity: 0.3,
               ),
             ),
+          ),
+          GestureDetector(
+            onHorizontalDragEnd: (details) {
+              final velocity = details.primaryVelocity ?? 0;
+              if (velocity > 500) {
+                _navigateToPrevious();
+              } else if (velocity < -500) {
+                _navigateToNext();
+              }
+            },
             child: Column(
               children: [
-                // Navigation buttons
-                if (widget.allHikam != null && widget.allHikam!.length > 1)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    color: isDark
-                        ? Colors.black.withOpacity(0.2)
-                        : Colors.white.withOpacity(0.5),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _currentIndex < widget.allHikam!.length - 1
-                              ? _navigateToNext
-                              : null,
-                          icon: const Icon(Icons.arrow_back),
-                          label: const Text(
-                            'التالي',
-                            style: TextStyle(fontFamily: 'Tajawal'),
-                          ),
-                        ),
-                        Text(
-                          '${_currentIndex + 1} من ${widget.allHikam!.length}',
-                          style: settings.fonts[settings.fontFamily]!(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _currentIndex > 0
-                              ? _navigateToPrevious
-                              : null,
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text(
-                            'السابق',
-                            style: TextStyle(fontFamily: 'Tajawal'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 // Content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 16,
+                      bottom: 80, // Add bottom padding for FAB
+                    ),
                     child: Card(
                       elevation: 4,
                       color: isDark
@@ -649,6 +621,73 @@ class _HikamDetailScreenState extends State<HikamDetailScreen> {
           ],
         ],
       ),
+      bottomNavigationBar:
+          widget.allHikam != null && widget.allHikam!.length > 1
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2d2d2d) : Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _currentIndex < widget.allHikam!.length - 1
+                        ? _navigateToNext
+                        : null,
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text(
+                      'التالي',
+                      style: TextStyle(fontFamily: 'Tajawal'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark
+                          ? Colors.amber.withOpacity(0.2)
+                          : Theme.of(context).primaryColor.withOpacity(0.1),
+                      foregroundColor: isDark
+                          ? Colors.amber
+                          : Theme.of(context).primaryColor,
+                      elevation: 0,
+                    ),
+                  ),
+                  Text(
+                    '${_currentIndex + 1} من ${widget.allHikam!.length}',
+                    style: settings.fonts[settings.fontFamily]!(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? Colors.white
+                          : const Color(0xFF3E2723), // Dark brown
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _currentIndex > 0 ? _navigateToPrevious : null,
+                    icon: const Icon(Icons.arrow_forward),
+                    label: const Text(
+                      'السابق',
+                      style: TextStyle(fontFamily: 'Tajawal'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark
+                          ? Colors.amber.withOpacity(0.2)
+                          : Theme.of(context).primaryColor.withOpacity(0.1),
+                      foregroundColor: isDark
+                          ? Colors.amber
+                          : Theme.of(context).primaryColor,
+                      elevation: 0,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : null,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.pushAndRemoveUntil(

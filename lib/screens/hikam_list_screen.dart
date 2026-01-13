@@ -22,11 +22,26 @@ class _HikamListScreenState extends State<HikamListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  final GlobalKey<TooltipState> _jumpTooltipKey = GlobalKey<TooltipState>();
+  bool _isJumpPressed = false;
+
   @override
   void initState() {
     super.initState();
     _loadData();
     _searchController.addListener(_onSearchChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runTooltipAnimation();
+    });
+  }
+
+  Future<void> _runTooltipAnimation() async {
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    _jumpTooltipKey.currentState?.ensureTooltipVisible();
+    setState(() => _isJumpPressed = true);
+    await Future.delayed(const Duration(milliseconds: 200));
+    setState(() => _isJumpPressed = false);
   }
 
   @override
@@ -54,65 +69,12 @@ class _HikamListScreenState extends State<HikamListScreen> {
     });
   }
 
-  void _showJumpToHikamDialog(BuildContext context) {
-    final TextEditingController jumpController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'اذهب إلى رقم الحكمة',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Tajawal'),
-        ),
-        content: TextField(
-          controller: jumpController,
-          keyboardType: TextInputType.number,
-          textAlign: TextAlign.center,
-          decoration: const InputDecoration(
-            hintText: 'أدخل رقم الحكمة',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
-          ),
-          TextButton(
-            onPressed: () {
-              final num = int.tryParse(jumpController.text);
-              if (num != null && num > 0 && num <= _allHikam.length) {
-                Navigator.pop(context);
-                // Find the hikam with this ID
-                final hikam = _allHikam.firstWhere(
-                  (h) => h.id == num.toString(),
-                  orElse: () => _allHikam[num - 1],
-                );
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HikamDetailScreen(
-                      hikam: hikam,
-                      allHikam: _allHikam,
-                      currentIndex: _allHikam.indexOf(hikam),
-                    ),
-                  ),
-                );
-              }
-            },
-            child: const Text('اذهب', style: TextStyle(fontFamily: 'Tajawal')),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Watch settings at the top level of build
     final settings = context.watch<SettingsProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final useHistoric = settings.useHistoricBackground;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,7 +82,7 @@ class _HikamListScreenState extends State<HikamListScreen> {
           'حِكَمِ أَمِير المؤمنين (عليه السلام)',
           style: settings.fonts[settings.fontFamily]!(
             fontWeight: FontWeight.bold,
-            fontSize: 20,
+            fontSize: 22,
           ),
         ),
         centerTitle: true,
@@ -137,10 +99,17 @@ class _HikamListScreenState extends State<HikamListScreen> {
           onPressed: () => settings.toggleThemeMode(),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.tag),
-            tooltip: 'اذهب إلى رقم الحكمة',
-            onPressed: () => _showJumpToHikamDialog(context),
+          Tooltip(
+            key: _jumpTooltipKey,
+            message: 'اذهب إلى رقم الحكمة',
+            child: AnimatedScale(
+              scale: _isJumpPressed ? 0.8 : 1.0,
+              duration: const Duration(milliseconds: 150),
+              child: IconButton(
+                icon: const Icon(Icons.tag),
+                onPressed: () => _showJumpToHikamDialog(context),
+              ),
+            ),
           ),
         ],
         bottom: PreferredSize(
@@ -149,29 +118,22 @@ class _HikamListScreenState extends State<HikamListScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: TextField(
               controller: _searchController,
-              style: settings.fonts[settings.fontFamily]!(fontSize: 16),
-              textAlign: TextAlign.right,
               decoration: InputDecoration(
                 hintText: 'بحث في الحكم...',
                 hintStyle: settings.fonts[settings.fontFamily]!(
-                  color: Colors.grey,
+                  color: Colors.white70,
                 ),
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                        },
-                      )
-                    : null,
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
                 filled: true,
-                fillColor: isDark ? Colors.grey[800] : Colors.white,
+                fillColor: Colors.white.withOpacity(0.2),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
+              style: settings.fonts[settings.fontFamily]!(color: Colors.white),
+              cursorColor: Colors.white,
             ),
           ),
         ),
@@ -181,129 +143,166 @@ class _HikamListScreenState extends State<HikamListScreen> {
           : _filteredHikam.isEmpty
           ? Center(
               child: Text(
-                'لا توجد نتائج',
+                "لا توجد نتائج (0)",
                 style: settings.fonts[settings.fontFamily]!(
                   fontSize: 18,
                   color: Colors.grey,
                 ),
               ),
             )
-          : Container(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF2C2C2C)
-                    : const Color(0xFFE8F5E9), // Light green background
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/old_paper_texture.png'),
-                  fit: BoxFit.cover,
-                  opacity: 0.3,
-                ),
-              ),
+          : RawScrollbar(
+              thumbVisibility: true,
+              controller: _scrollController,
+              thumbColor: Theme.of(context).primaryColor,
+              radius: const Radius.circular(20),
+              thickness: 6,
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
+                ),
                 itemCount: _filteredHikam.length,
                 itemBuilder: (context, index) {
                   final hikam = _filteredHikam[index];
                   final globalIndex = _allHikam.indexOf(hikam);
+                  final heroTag = 'hikam_${hikam.id}';
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 2,
-                    color: isDark
-                        ? const Color(0xFF3E3E3E)
-                        : Colors.white, // Pure white for cards in light mode
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HikamDetailScreen(
-                              hikam: hikam,
-                              searchQuery: _searchController.text.isNotEmpty
-                                  ? _searchController.text
-                                  : null,
-                              allHikam: _allHikam,
-                              currentIndex: globalIndex,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Number badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? Colors.amber.withOpacity(0.2)
-                                    : Theme.of(
-                                        context,
-                                      ).primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                hikam.id,
-                                style: settings.fonts[settings.fontFamily]!(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark
-                                      ? Colors.amber
-                                      : Theme.of(context).primaryColor,
+                  final numberColor = isDark
+                      ? Colors.amber
+                      : Theme.of(context).primaryColor;
+                  final textColor = isDark
+                      ? Colors.white
+                      : const Color(0xFF00695C); // Green for light mode
+
+                  return Hero(
+                    tag: heroTag,
+                    child: Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      elevation: 2,
+                      clipBehavior: Clip.antiAlias,
+                      color: useHistoric ? Colors.transparent : null,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: useHistoric
+                            ? BoxDecoration(
+                                image: DecorationImage(
+                                  image: const AssetImage(
+                                    'assets/images/old_paper_texture.png',
+                                  ),
+                                  fit: BoxFit.fill,
+                                  colorFilter: isDark
+                                      ? ColorFilter.mode(
+                                          Colors.black.withOpacity(0.8),
+                                          BlendMode.darken,
+                                        )
+                                      : null,
+                                ),
+                              )
+                            : null,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HikamDetailScreen(
+                                  hikam: hikam,
+                                  searchQuery: _searchController.text.isNotEmpty
+                                      ? _searchController.text
+                                      : null,
+                                  allHikam: _allHikam,
+                                  currentIndex: globalIndex,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            // Text preview
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    hikam.displayTitle,
-                                    style: settings.fonts[settings.fontFamily]!(
-                                      fontSize: 16,
-                                      height: 1.8,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (hikam.footnotes.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.info_outline,
-                                            size: 16,
-                                            color: Colors.grey[600],
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${hikam.footnotes.length} حاشية',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[600],
-                                              fontFamily: 'Tajawal',
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? Colors.amber.withOpacity(0.2)
+                                            : Theme.of(
+                                                context,
+                                              ).primaryColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        hikam.id,
+                                        style:
+                                            settings.fonts[settings
+                                                .fontFamily]!(
+                                              color: numberColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
                                             ),
-                                          ),
-                                        ],
                                       ),
                                     ),
+                                    const SizedBox(width: 12),
+                                    // Title / Preview
+                                    Expanded(
+                                      child: Text(
+                                        hikam.displayTitle,
+                                        style:
+                                            settings.fonts[settings
+                                                .fontFamily]!(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.5,
+                                              color: textColor,
+                                            ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (hikam.footnotes.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        size: 16,
+                                        color: isDark
+                                            ? Colors.white60
+                                            : Colors.grey[700],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${hikam.footnotes.length} حاشية',
+                                        style:
+                                            settings.fonts[settings
+                                                .fontFamily]!(
+                                              fontSize: 12,
+                                              color: isDark
+                                                  ? Colors.white60
+                                                  : Colors.grey[700],
+                                            ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -322,14 +321,18 @@ class _HikamListScreenState extends State<HikamListScreen> {
         backgroundColor: isDark ? const Color(0xFF2d2d2d) : Colors.white,
         icon: Icon(
           Icons.home_rounded,
-          color: isDark ? Colors.amber : const Color(0xFF00695C),
+          color: isDark
+              ? Colors.amber
+              : const Color(0xFF00695C), // Green for light mode
           size: 24,
         ),
         label: Text(
           'القائمة الرئيسية',
           style: TextStyle(
             fontFamily: 'Tajawal',
-            color: isDark ? Colors.amber : const Color(0xFF00695C),
+            color: isDark
+                ? Colors.amber
+                : const Color(0xFF00695C), // Green for light mode
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
@@ -338,12 +341,105 @@ class _HikamListScreenState extends State<HikamListScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
           side: BorderSide(
-            color: isDark ? Colors.amber : const Color(0xFF8D6E63),
+            color: isDark
+                ? Colors.amber.withOpacity(0.5)
+                : const Color(0xFF8D6E63),
             width: 2,
           ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
+  }
+
+  void _showJumpToHikamDialog(BuildContext context) {
+    final TextEditingController jumpController = TextEditingController();
+    // Use showDialog builder to get context with providers if needed
+    showDialog(
+      context: context,
+      builder: (context) {
+        final settings = context.watch<SettingsProvider>();
+        return AlertDialog(
+          title: Text(
+            'اذهب إلى رقم الحكمة',
+            style: settings.fonts[settings.fontFamily]!(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: TextField(
+            controller: jumpController,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'أدخل رقم الحكمة',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (_) {
+              _handleJumpToHikam(context, jumpController.text);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'إلغاء',
+                style: settings.fonts[settings.fontFamily]!(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _handleJumpToHikam(context, jumpController.text);
+              },
+              child: Text(
+                'اذهب',
+                style: settings.fonts[settings.fontFamily]!(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleJumpToHikam(BuildContext context, String input) {
+    if (input.isNotEmpty) {
+      final settings = context.read<SettingsProvider>();
+      final numValue = int.tryParse(input);
+      if (numValue != null && numValue > 0 && numValue <= _allHikam.length) {
+        Navigator.pop(context);
+        // Find the hikam with this ID (assuming id matches index+1 roughly or just finding by valid range)
+        // Note: The previous logic relied on _filteredHikam or _allHikam usage.
+        // Assuming IDs are effectively 1-based indices or sequential.
+        // The previous code: _allHikam[num - 1] (if index backup).
+        // Let's stick to safe index access.
+
+        final index = numValue - 1;
+        if (index < _allHikam.length) {
+          final hikam = _allHikam[index];
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HikamDetailScreen(
+                hikam: hikam,
+                allHikam: _allHikam,
+                currentIndex: index,
+              ),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'رقم غير صحيح (1-${_allHikam.length})',
+              style: settings.fonts[settings.fontFamily]!(),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

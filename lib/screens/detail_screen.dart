@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/content_model.dart';
 import '../providers/bookmarks_provider.dart';
 import '../providers/settings_provider.dart';
@@ -39,6 +40,7 @@ class _SermonContent extends StatefulWidget {
   final SettingsProvider settings;
   final bool isDark;
   final ValueChanged<double> onProgressChanged;
+  final bool showFloatingButton;
 
   const _SermonContent({
     super.key,
@@ -47,6 +49,7 @@ class _SermonContent extends StatefulWidget {
     required this.settings,
     required this.isDark,
     required this.onProgressChanged,
+    required this.showFloatingButton,
   });
 
   @override
@@ -100,6 +103,33 @@ class _SermonContentState extends State<_SermonContent> {
     });
   }
 
+  // Helper method to determine if a paragraph is part of the intro/metadata
+  bool _isIntroParagraph(String paragraph) {
+    // The intro typically contains these patterns
+    final introPatterns = [
+      'ومن خطبة له',
+      'ومن كلام له',
+      'ومن كتاب له',
+      'ومن وصية له',
+      'ومن وصيّته',
+      'ومن عهد له',
+    ];
+
+    // Check if paragraph contains intro patterns
+    for (final pattern in introPatterns) {
+      if (paragraph.contains(pattern)) {
+        return true;
+      }
+    }
+
+    // Also check if it's very short (likely metadata)
+    if (paragraph.trim().length < 50 && paragraph.contains('(عليه السلام)')) {
+      return true;
+    }
+
+    return false;
+  }
+
   void _onScroll() {
     final positions = _itemPositionsListener.itemPositions.value;
     if (positions.isEmpty) return;
@@ -123,19 +153,83 @@ class _SermonContentState extends State<_SermonContent> {
     widget.onProgressChanged(progress);
   }
 
-  TextSpan _buildHighlightedText(String text, TextStyle style) {
+  // Helper method to find where the actual sermon content starts in a paragraph
+  int _findSermonContentStart(String text) {
+    // Look for common patterns that indicate the start of actual sermon content
+    // These are typically Arabic text that starts with specific letters after the intro
+
+    // First, check if this is an intro paragraph
+    if (!_isIntroParagraph(text)) {
+      return 0; // No intro, entire text is content
+    }
+
+    // Find the end of the intro patterns
+    final patterns = [
+      RegExp(r'\]\s*'), // After closing bracket
+      RegExp(r'\(عليه السلام\)\s*'), // After (peace be upon him)
+    ];
+
+    int latestEnd = 0;
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null && match.end > latestEnd) {
+        latestEnd = match.end;
+      }
+    }
+
+    // If we found a pattern, the content starts after it
+    if (latestEnd > 0) {
+      return latestEnd;
+    }
+
+    return 0;
+  }
+
+  TextSpan _buildHighlightedText(
+    String text,
+    TextStyle style, {
+    Color? introColor,
+  }) {
+    // First, determine if we need to split into intro and content
+    final sermonStart = _findSermonContentStart(text);
+
+    if (sermonStart > 0 && introColor != null) {
+      // Split the text into intro and content parts
+      final introPart = text.substring(0, sermonStart);
+      final contentPart = text.substring(sermonStart);
+
+      final introStyle = style.copyWith(
+        color: introColor,
+        fontStyle: FontStyle.italic,
+        fontSize: (style.fontSize ?? 16) - 1,
+      );
+
+      // Build spans for both parts with search highlighting
+      final introSpans = _buildSearchHighlightedSpans(introPart, introStyle);
+      // Add a newline after intro text
+      final newlineSpan = TextSpan(text: '\n', style: style);
+      final contentSpans = _buildSearchHighlightedSpans(contentPart, style);
+
+      return TextSpan(children: [...introSpans, newlineSpan, ...contentSpans]);
+    }
+
+    // No split needed, just apply search highlighting
+    return TextSpan(children: _buildSearchHighlightedSpans(text, style));
+  }
+
+  List<TextSpan> _buildSearchHighlightedSpans(String text, TextStyle style) {
     if (widget.searchQuery == null || widget.searchQuery!.isEmpty) {
-      return TextSpan(text: text, style: style);
+      return [TextSpan(text: text, style: style)];
     }
 
     final String query = ArabicUtils.normalize(widget.searchQuery!);
-    if (query.isEmpty) return TextSpan(text: text, style: style);
+    if (query.isEmpty) return [TextSpan(text: text, style: style)];
 
     StringBuffer buffer = StringBuffer();
     for (int i = 0; i < query.length; i++) {
       String char = query[i];
-      if (RegExp(r'[.\[\]{}()\\*+?|^$]').hasMatch(char)) {
-        char = '\\$char';
+      if (RegExp(r'[.\\[\\]{}()\\\\*+?|^$]').hasMatch(char)) {
+        char = '\\\\$char';
       }
 
       if (char == 'ا') {
@@ -148,7 +242,7 @@ class _SermonContentState extends State<_SermonContent> {
         buffer.write(char);
       }
 
-      buffer.write(r'[\u064B-\u065F\u06D6-\u06ED]*');
+      buffer.write(r'[\\u064B-\\u065F\\u06D6-\\u06ED]*');
     }
 
     final RegExp regex = RegExp(buffer.toString());
@@ -179,22 +273,32 @@ class _SermonContentState extends State<_SermonContent> {
       spans.add(TextSpan(text: text.substring(start), style: style));
     }
 
-    return TextSpan(children: spans);
+    return spans;
   }
 
   @override
   Widget build(BuildContext context) {
     final textColor = widget.isDark
         ? Colors.white
-        : const Color(0xFF00695C); // Green for light mode
+        : const Color(0xFF3E2723); // Dark brown for light mode
     final titleColor = widget.isDark
         ? Colors.amber
-        : const Color(0xFF00695C); // Green for light mode
+        : const Color(0xFF3E2723); // Dark brown for light mode
+
+    // Lighter color for intro/metadata text
+    final introTextColor = widget.isDark ? Colors.grey[400] : Colors.grey[600];
 
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollController,
       itemPositionsListener: _itemPositionsListener,
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.fromLTRB(
+        20.0,
+        20.0,
+        20.0,
+        widget.showFloatingButton
+            ? 100.0
+            : 20.0, // Extra bottom padding when FAB is visible
+      ),
       itemCount: _paragraphs.length + 2,
       itemBuilder: (context, index) {
         if (index == 0) {
@@ -220,16 +324,19 @@ class _SermonContentState extends State<_SermonContent> {
             ),
           );
         } else {
+          final paragraphText = _paragraphs[index - 2];
+
           return Padding(
             padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
             child: SelectableText.rich(
               _buildHighlightedText(
-                _paragraphs[index - 2],
+                paragraphText,
                 widget.settings.fonts[widget.settings.fontFamily]!(
                   fontSize: widget.settings.fontSize,
                   height: 1.8,
                   color: textColor,
                 ),
+                introColor: introTextColor,
               ),
               textAlign: TextAlign.justify,
             ),
@@ -243,6 +350,7 @@ class _SermonContentState extends State<_SermonContent> {
 class _DetailScreenState extends State<DetailScreen> {
   double _readingProgress = 0.0;
   bool _showControls = false;
+  bool _showTutorial = false;
 
   late SermonModel _currentSermon;
   late int? _currentIndex;
@@ -252,6 +360,35 @@ class _DetailScreenState extends State<DetailScreen> {
     super.initState();
     _currentSermon = widget.sermon;
     _currentIndex = widget.currentIndex;
+    _checkAndShowTutorial();
+  }
+
+  Future<void> _checkAndShowTutorial() async {
+    // Only show tutorial if there are multiple sermons to navigate
+    if (widget.allSermons == null || widget.allSermons!.length <= 1) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenTutorial = prefs.getBool('has_seen_swipe_tutorial') ?? false;
+
+    if (!hasSeenTutorial) {
+      // Show tutorial after a short delay
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        setState(() {
+          _showTutorial = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _dismissTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_swipe_tutorial', true);
+    setState(() {
+      _showTutorial = false;
+    });
   }
 
   void _shareContent(BuildContext context) {
@@ -303,10 +440,10 @@ class _DetailScreenState extends State<DetailScreen> {
             : const Color(0xFFE8F5E9); // Light green background
         final textColor = isDark
             ? Colors.white
-            : const Color(0xFF00695C); // Green for text in light mode
+            : const Color(0xFF3E2723); // Dark brown for text in light mode
         final titleColor = isDark
             ? Colors.amber
-            : const Color(0xFF00695C); // Green for title in light mode
+            : const Color(0xFF3E2723); // Dark brown for title in light mode
 
         return Scaffold(
           backgroundColor: backgroundColor,
@@ -438,6 +575,10 @@ class _DetailScreenState extends State<DetailScreen> {
                     searchQuery: widget.searchQuery,
                     settings: settings,
                     isDark: isDark,
+                    showFloatingButton:
+                        widget.allSermons != null &&
+                        _currentIndex != null &&
+                        _readingProgress >= 0.9,
                     onProgressChanged: (progress) {
                       setState(() {
                         _readingProgress = progress;
@@ -695,12 +836,228 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                 ),
               ],
+              // Tutorial Overlay
+              if (_showTutorial)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _dismissTutorial,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.85),
+                      child: SafeArea(
+                        child: Stack(
+                          children: [
+                            // Close button
+                            Positioned(
+                              top: 16,
+                              right: 16,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                                onPressed: _dismissTutorial,
+                              ),
+                            ),
+                            // Tutorial content
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Title
+                                  const Text(
+                                    'اسحب لتصفح الخطب',
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.amber,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 60),
+                                  // Swipe gestures demonstration
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // Right swipe (Previous)
+                                      Column(
+                                        children: [
+                                          TweenAnimationBuilder<double>(
+                                            tween: Tween(begin: 0.0, end: 1.0),
+                                            duration: const Duration(
+                                              milliseconds: 1500,
+                                            ),
+                                            curve: Curves.easeInOut,
+                                            builder: (context, value, child) {
+                                              return Transform.translate(
+                                                offset: Offset(
+                                                  -50 + (value * 50),
+                                                  0,
+                                                ),
+                                                child: Opacity(
+                                                  opacity: 1.0 - (value * 0.5),
+                                                  child: const Icon(
+                                                    Icons.arrow_back,
+                                                    size: 60,
+                                                    color: Colors.amber,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            onEnd: () {
+                                              if (mounted && _showTutorial) {
+                                                setState(() {});
+                                              }
+                                            },
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                              vertical: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: Colors.amber,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              'السابق',
+                                              style: TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 80),
+                                      // Left swipe (Next)
+                                      Column(
+                                        children: [
+                                          TweenAnimationBuilder<double>(
+                                            tween: Tween(begin: 0.0, end: 1.0),
+                                            duration: const Duration(
+                                              milliseconds: 1500,
+                                            ),
+                                            curve: Curves.easeInOut,
+                                            builder: (context, value, child) {
+                                              return Transform.translate(
+                                                offset: Offset(
+                                                  50 - (value * 50),
+                                                  0,
+                                                ),
+                                                child: Opacity(
+                                                  opacity: 1.0 - (value * 0.5),
+                                                  child: const Icon(
+                                                    Icons.arrow_forward,
+                                                    size: 60,
+                                                    color: Colors.amber,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            onEnd: () {
+                                              if (mounted && _showTutorial) {
+                                                setState(() {});
+                                              }
+                                            },
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                              vertical: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: Colors.amber,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              'التالي',
+                                              style: TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 60),
+                                  // Instruction text
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 40,
+                                    ),
+                                    child: Text(
+                                      'اسحب يميناً أو يساراً للتنقل بين الخطب',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 18,
+                                        color: Colors.white70,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 40),
+                                  // Dismiss button
+                                  ElevatedButton(
+                                    onPressed: _dismissTutorial,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.amber,
+                                      foregroundColor: Colors.black,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 40,
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'فهمت',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
           floatingActionButton:
               widget.allSermons != null &&
                   _currentIndex != null &&
-                  _readingProgress >= 0.75
+                  _readingProgress >= 0.9
               ? Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: Row(
@@ -746,8 +1103,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                       color: isDark
                                           ? Colors.amber
                                           : const Color(
-                                              0xFF00695C,
-                                            ), // Green for light mode
+                                              0xFF3E2723,
+                                            ), // Dark brown for light mode
                                       size: 18,
                                     ),
                                     const SizedBox(width: 8),
@@ -758,8 +1115,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                         color: isDark
                                             ? Colors.amber
                                             : const Color(
-                                                0xFF00695C,
-                                              ), // Green for light mode
+                                                0xFF3E2723,
+                                              ), // Dark brown for light mode
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -803,8 +1160,8 @@ class _DetailScreenState extends State<DetailScreen> {
                             color: isDark
                                 ? Colors.amber
                                 : const Color(
-                                    0xFF00695C,
-                                  ), // Green for light mode
+                                    0xFF3E2723,
+                                  ), // Dark brown for light mode
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -853,8 +1210,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                         color: isDark
                                             ? Colors.amber
                                             : const Color(
-                                                0xFF00695C,
-                                              ), // Green for light mode
+                                                0xFF3E2723,
+                                              ), // Dark brown for light mode
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
                                       ),
@@ -865,8 +1222,8 @@ class _DetailScreenState extends State<DetailScreen> {
                                       color: isDark
                                           ? Colors.amber
                                           : const Color(
-                                              0xFF00695C,
-                                            ), // Green for light mode
+                                              0xFF3E2723,
+                                            ), // Dark brown for light mode
                                       size: 18,
                                     ),
                                   ],
