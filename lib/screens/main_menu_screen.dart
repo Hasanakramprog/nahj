@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/hikam_service.dart';
+import '../services/widget_service.dart';
 import '../models/hikam_model.dart';
 import 'home_screen.dart'; // Import ContentListScreen
 import 'hikam_list_screen.dart';
@@ -50,7 +51,12 @@ class _MainMenuScreenState extends State<MainMenuScreen>
       final hikamList = await _hikamService.loadHikam();
       if (hikamList.isEmpty) return null;
       final random = Random();
-      return hikamList[random.nextInt(hikamList.length)];
+      final hikma = hikamList[random.nextInt(hikamList.length)];
+
+      // Sync with iOS Home Screen Widget
+      WidgetService.updateWidgetWithHikma(hikma);
+
+      return hikma;
     } catch (e) {
       debugPrint("Error loading random hikma: $e");
       return null;
